@@ -35,9 +35,9 @@ void extractImage(int imgX, int imgY, int imgW, int imgH, int bitDepth, const st
                 for (int x = 0; x < 16; x++) {
                     int iX = w * 16 + x;
                     if (iX >= imgW) continue;
-                    uint8_t col = image[(imgY+y)*pngW + iX];
+                    uint8_t col = image[(imgY+y)*pngW + imgX + iX];                    
                     if (col & mask) {
-                        planes[i][planeWWords * y + w] |= 1 << (16-x);
+                        planes[i][planeWWords * y + w] |= 1 << (15-x);
                     }
                 }
             }
@@ -45,12 +45,15 @@ void extractImage(int imgX, int imgY, int imgW, int imgH, int bitDepth, const st
     }
 
     // Header
-    headerStream << "extern struct Image *" << structName << ";\n";
+    headerStream 
+        << "#define " << structName << "_W " << imgW << "\n"
+        << "#define " << structName << "_H " << imgH << "\n"
+        << "extern struct Image " << structName << ";\n";
 
     // Impl
     // ImageData
     implStream 
-        << "static USHORT " << structName << "_imageData[] = {\n";
+        << "static USHORT CHIPMEM " << structName << "_imageData[] = {\n";
     for (int i = 0; i < bitDepth; i++) {
         implStream << "  // Plane " << i << "\n";
         for (int y = 0; y < imgH; y++) {
@@ -66,11 +69,12 @@ void extractImage(int imgX, int imgY, int imgW, int imgH, int bitDepth, const st
         << "\n"
         << "struct Image " << structName << " = {\n"
         << "  0, 0,\n"
-        << "  " << imgW << ", " << imgH << ",\n"
+        << "  " << structName << "_W, " << structName << "_H,\n"
         << "  " << bitDepth << ",\n"
         << "  " << structName << "_imageData,\n"
         << "  15, 0, NULL\n"
-        << "};\n";
+        << "};\n"
+        << "\n\n";
 }
 
 int main(int argc, char **argv) {
@@ -135,46 +139,86 @@ int main(int argc, char **argv) {
 
     std::ofstream implStream;
     implStream.open(dest + ".c");
-    implStream << "#include <intuition/intuition.h>\n\n";
+    implStream 
+        << "#include <intuition/intuition.h>\n"
+        << "#include \"images.h\"\n\n"
+        << "#ifdef __VBCC__\n"
+        << "#define CHIPMEM __chip\n"
+        << "#else\n"
+        << "#define CHIPMEM  __attribute__((section (\".MEMF_CHIP\")))\n"
+        << "#endif\n\n";
 
 
     // Digits
-    extractImage( 0*13,0,13,23,bitDepth, "img_digit0", headerStream, implStream);
-    extractImage( 1*13,0,13,23,bitDepth, "img_digit1", headerStream, implStream);
-    extractImage( 2*13,0,13,23,bitDepth, "img_digit2", headerStream, implStream);
-    extractImage( 3*13,0,13,23,bitDepth, "img_digit3", headerStream, implStream);
-    extractImage( 4*13,0,13,23,bitDepth, "img_digit4", headerStream, implStream);
-    extractImage( 5*13,0,13,23,bitDepth, "img_digit5", headerStream, implStream);
-    extractImage( 6*13,0,13,23,bitDepth, "img_digit6", headerStream, implStream);
-    extractImage( 7*13,0,13,23,bitDepth, "img_digit7", headerStream, implStream);
-    extractImage( 8*13,0,13,23,bitDepth, "img_digit8", headerStream, implStream);
-    extractImage( 9*13,0,13,23,bitDepth, "img_digit9", headerStream, implStream);
-    extractImage(10*13,0,13,23,bitDepth, "img_digitEmpty", headerStream, implStream);
-    extractImage(11*13,0,13,23,bitDepth, "img_digitDash", headerStream, implStream);
+    int top = 0;
+    extractImage( 0*13,top,13,23,bitDepth, "imgDigit0", headerStream, implStream);
+    extractImage( 1*13,top,13,23,bitDepth, "imgDigit1", headerStream, implStream);
+    extractImage( 2*13,top,13,23,bitDepth, "imgDigit2", headerStream, implStream);
+    extractImage( 3*13,top,13,23,bitDepth, "imgDigit3", headerStream, implStream);
+    extractImage( 4*13,top,13,23,bitDepth, "imgDigit4", headerStream, implStream);
+    extractImage( 5*13,top,13,23,bitDepth, "imgDigit5", headerStream, implStream);
+    extractImage( 6*13,top,13,23,bitDepth, "imgDigit6", headerStream, implStream);
+    extractImage( 7*13,top,13,23,bitDepth, "imgDigit7", headerStream, implStream);
+    extractImage( 8*13,top,13,23,bitDepth, "imgDigit8", headerStream, implStream);
+    extractImage( 9*13,top,13,23,bitDepth, "imgDigit9", headerStream, implStream);
+    extractImage(10*13,top,13,23,bitDepth, "imgDigitEmpty", headerStream, implStream);
+    extractImage(11*13,top,13,23,bitDepth, "imgDigitDash", headerStream, implStream);
+    top += 23;
 
     // playfield items
-    extractImage( 0*16,23,16,16,bitDepth, "img_floor0", headerStream, implStream);
-    extractImage( 1*16,23,16,16,bitDepth, "img_floor1", headerStream, implStream);
-    extractImage( 2*16,23,16,16,bitDepth, "img_floor2", headerStream, implStream);
-    extractImage( 3*16,23,16,16,bitDepth, "img_floor3", headerStream, implStream);
-    extractImage( 4*16,23,16,16,bitDepth, "img_floor4", headerStream, implStream);
-    extractImage( 5*16,23,16,16,bitDepth, "img_floor5", headerStream, implStream);
-    extractImage( 6*16,23,16,16,bitDepth, "img_floor6", headerStream, implStream);
-    extractImage( 7*16,23,16,16,bitDepth, "img_floor7", headerStream, implStream);
-    extractImage( 8*16,23,16,16,bitDepth, "img_floor8", headerStream, implStream);
-    extractImage( 9*16,23,16,16,bitDepth, "img_floorBomb", headerStream, implStream);
-    extractImage(10*16,23,16,16,bitDepth, "img_floorBombWrong", headerStream, implStream);
-    extractImage(11*16,23,16,16,bitDepth, "img_floorBomExploded", headerStream, implStream);
-    extractImage(12*16,23,16,16,bitDepth, "img_floorMaybe", headerStream, implStream);
-    extractImage(13*16,23,16,16,bitDepth, "img_floorFlagged", headerStream, implStream);
-    extractImage(14*16,23,16,16,bitDepth, "img_floorClosed", headerStream, implStream);
+    extractImage( 0*16,top,16,16,bitDepth, "imgTile0", headerStream, implStream);
+    extractImage( 1*16,top,16,16,bitDepth, "imgTile1", headerStream, implStream);
+    extractImage( 2*16,top,16,16,bitDepth, "imgTile2", headerStream, implStream);
+    extractImage( 3*16,top,16,16,bitDepth, "imgTile3", headerStream, implStream);
+    extractImage( 4*16,top,16,16,bitDepth, "imgTile4", headerStream, implStream);
+    extractImage( 5*16,top,16,16,bitDepth, "imgTile5", headerStream, implStream);
+    extractImage( 6*16,top,16,16,bitDepth, "imgTile6", headerStream, implStream);
+    extractImage( 7*16,top,16,16,bitDepth, "imgTile7", headerStream, implStream);
+    extractImage( 8*16,top,16,16,bitDepth, "imgTile8", headerStream, implStream);
+    extractImage(10*16,top,16,16,bitDepth, "imgTileMine", headerStream, implStream);
+    extractImage(11*16,top,16,16,bitDepth, "imgTileMineWrong", headerStream, implStream);
+    extractImage(12*16,top,16,16,bitDepth, "imgTileMineExploded", headerStream, implStream);
+    extractImage(13*16,top,16,16,bitDepth, "imgTileMaybe", headerStream, implStream);
+    extractImage(14*16,top,16,16,bitDepth, "imgTileFlagged", headerStream, implStream);
+    extractImage(15*16,top,16,16,bitDepth, "imgTileClosed", headerStream, implStream);
+    top += 16;
 
     // faces
-    extractImage(0*24,23+16,24,24,bitDepth, "img_faceNormal", headerStream, implStream);
-    extractImage(1*24,23+16,24,24,bitDepth, "img_faceO", headerStream, implStream);
-    extractImage(2*24,23+16,24,24,bitDepth, "img_faceSad", headerStream, implStream);
-    extractImage(3*24,23+16,24,24,bitDepth, "img_faceGlasses", headerStream, implStream);
-    
+    extractImage(0*24,top,24,24,bitDepth, "imgFaceNormal", headerStream, implStream);
+    extractImage(1*24,top,24,24,bitDepth, "imgFaceO", headerStream, implStream);
+    extractImage(2*24,top,24,24,bitDepth, "imgFaceSad", headerStream, implStream);
+    extractImage(3*24,top,24,24,bitDepth, "imgFaceGlasses", headerStream, implStream);
+    extractImage(4*24,top,24,24,bitDepth, "imgFacePressed", headerStream, implStream);
+    top += 24;
+
+    // logo
+    extractImage(0,top,182,63,bitDepth, "imgLogo", headerStream, implStream);
+    top += 63;
+
+    // quit button
+    extractImage(0*7,top,7,7,bitDepth, "btnQuit", headerStream, implStream);
+    extractImage(1*7,top,7,7,bitDepth, "btnQuitPressed", headerStream, implStream);
+    top += 7;
+
+
+    // extract palette
+    int numPalette;
+    png_colorp palette;
+    png_get_PLTE(png, info, &palette, &numPalette);
+
+    headerStream << "#define NUM_COLS " << (1 << bitDepth) << "\n";
+    headerStream << "extern USHORT palette[NUM_COLS];\n\n";
+
+    implStream << "USHORT palette[" << (1 << bitDepth) << "] = {\n";
+    for (int i = 0; i < numPalette; i++) {
+        std::uint16_t r = palette[i].red/16;
+        std::uint16_t g = palette[i].green/16;
+        std::uint16_t b = palette[i].blue/16;
+        implStream << "    " << toHex(r << 8 | g << 4 | b) << ",\n";
+    }
+    implStream << "};\n\n";
+
+
     headerStream << "#endif\n";
     headerStream.close();
 
