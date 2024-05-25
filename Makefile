@@ -1,21 +1,28 @@
 .PHONY: clean
 
+VBCCFLAGS = -dontwarn=51 -dontwarn=214 -DDEBUG
+
 OBJS = \
-  gen/minesweeper.o \
   gen/images.o \
+  gen/debug.o \
+  gen/game.o \
+  gen/graphics.o \
+  gen/mem.o \
+  gen/minesweeper.o \
+  
 
 all: minesweeper
 
 clean:
 	@rm -f *.o minesweeper
 	@rm -f gen/*
-	@rm src/images.c src/images.h
+	@rm -f src/images.c src/images.h
 
 src/images.c: gen/imggen resources/items.png
-	tools/imggen resources/items.png src/images
+	gen/imggen resources/items.png src/images
 
 gen/%.o: src/%.c
-	vc +kick13 $< -c -o $@
+	vc +kick13 $(VBCCFLAGS) $< -c -o $@
 
 minesweeper: $(OBJS)
 	vc +kick13 -lamiga $^ -o $@
