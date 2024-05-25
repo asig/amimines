@@ -56,10 +56,10 @@ struct Window *window;
 struct Game game;
 
 ULONG ticks;
-USHORT terminate;
-USHORT tileX;
-USHORT tileY;
-struct Tile *selectedTile;
+BOOL terminate;
+SHORT tileX;
+SHORT tileY;
+BOOL trackingMouse;
 
 struct Image *digits[] = {
     &imgDigit0,
@@ -149,6 +149,15 @@ void drawPlayfieldTile(int x, int y) {
     DrawImage(window->RPort, img, PLAYFIELD_X+(x-1)*16, PLAYFIELD_Y+(y-1)*16);
 }
 
+void drawPlayfieldTileSelected(USHORT x, USHORT y) {
+    struct Tile *tile = &game.tiles[y][x];
+    if (tile->state == TILE_CLOSED) {
+        drawPlayfieldTileExplicit(x, y, &imgTile0);
+    } else {
+        drawPlayfieldTile(x,y);
+    }
+}
+
 void drawPlayfield() {
     for(int y = 1; y <= PLAYFIELD_H_TILES; y++) {
         for (int x = 1; x <= PLAYFIELD_W_TILES; x++) {
@@ -235,14 +244,16 @@ void createWindow() {
 }
 
 BOOL mouseToTile(SHORT mouseX, SHORT mouseY, USHORT *tileX, USHORT *tileY) {
-    int tX = (mouseX - PLAYFIELD_X)/imgTile0_W;
-    int tY = (mouseY - PLAYFIELD_Y)/imgTile0_H;
-    if (tX >= 0 && tX < PLAYFIELD_W_TILES && tY >= 0 && tY < PLAYFIELD_H_TILES) {
-        *tileX = tX + 1;
-        *tileY = tY + 1;
-        return TRUE;
+    mouseX -= PLAYFIELD_X;
+    mouseY -= PLAYFIELD_Y;
+    if (mouseX < 0 || mouseX >= PLAYFIELD_W_TILES * imgTile0_W || mouseY < 0 || mouseY >= PLAYFIELD_H_TILES * imgTile0_H) {
+        // outside playfield
+        *tileX = *tileY = 0;
+        return FALSE;
     }
-    return FALSE;
+    *tileX = mouseX/imgTile0_W + 1;
+    *tileY = mouseY/imgTile0_H + 1;
+    return TRUE;
 }
 
 void diedAt(USHORT tx, USHORT ty) {
@@ -292,12 +303,12 @@ void handleLmbDown(struct IntuiMessage *msg) {
     // LMB. Check if we click a tile
     if (mouseToTile(msg->MouseX, msg->MouseY, &tileX, &tileY)) {
         // Click is in a tile. Check the state
-        selectedTile = &game.tiles[tileY][tileX];
-        if (selectedTile->state != TILE_CLOSED) {
+        struct Tile* t = &game.tiles[tileY][tileX];
+        if (t->state != TILE_CLOSED) {
             // Ah, nothing to do :-(
-            selectedTile = NULL;
             return;
         }
+        trackingMouse = TRUE;
         DrawImage(window->RPort, &imgFaceO, SMILEY_X, SMILEY_Y);
         drawPlayfieldTileExplicit(tileX, tileY, &imgTile0);
     }
@@ -305,20 +316,16 @@ void handleLmbDown(struct IntuiMessage *msg) {
 
 void handleLmbUp(struct IntuiMessage *msg) {
     DrawImage(window->RPort, &imgFaceNormal, SMILEY_X, SMILEY_Y);
-    if (!selectedTile) {
+    if (!trackingMouse) {
         return;
     }
+    trackingMouse = FALSE;
 
     game.timerRunning = TRUE;
 
-    USHORT tX, tY;
-    if (mouseToTile(msg->MouseX, msg->MouseY, &tX, &tY)) {
-        if (tileX == tX && tileY == tY) {
-            openTile(tileX,tileY);
-        }
+    if (tileX > -0 && tileY > 0) {
+        openTile(tileX,tileY);
     }
-    selectedTile = NULL;
-    // drawPlayfieldTile(tileX, tileY);
 }
 
 void startGame() {
@@ -326,7 +333,7 @@ void startGame() {
     drawRemainingMines(game.unmarkedMines);
     drawTimer(game.ticks/50);
     drawPlayfield();
-    selectedTile = NULL;
+    trackingMouse = FALSE;
 }
 
 int main(int argc, char **argv) {
@@ -388,14 +395,31 @@ int main(int argc, char **argv) {
             drawRemainingMines(game.unmarkedMines);
         }
 
-        if (selectedTile) {
-            // Check if the mouse is still over the tile
+        if (trackingMouse) {
+            // Handle mouse moves
             BOOL sameTile = FALSE;
             USHORT tX, tY;
             if (mouseToTile(window->MouseX, window->MouseY, &tX, &tY)) {
-                sameTile = tX == tileX && tY == tileY;
-            } 
-            drawPlayfieldTileExplicit(tileX, tileY, sameTile ? &imgTile0 : &imgTileClosed);
+                // Current positiion is in the playfield
+                sameTile = tX == tileX && tY == tileY;                
+                if (sameTile) {
+                    drawPlayfieldTileSelected(tileX, tileY);
+                } else {
+                    if (tileX > 0 && tileY > 0) {
+                        // Only close old tile if it was actually on the playfield
+                        drawPlayfieldTile(tileX, tileY);
+                    }
+                    drawPlayfieldTileSelected(tX, tY);
+                }
+            } else {
+                // current position is not in the playfield
+                if (tileX > 0 && tileY > 0) {
+                    // Only close old tile if it was actually on the playfield
+                    drawPlayfieldTile(tileX, tileY);
+                }
+            }
+            tileX = tX;
+            tileY = tY;
         }
 
         // Process messages
