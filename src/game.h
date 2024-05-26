@@ -31,6 +31,7 @@ struct Game {
     BOOL running;
     ULONG timerRunning;
     ULONG ticks;
+    USHORT totalMines;
     SHORT unmarkedMines;
     SHORT closedTiles;
     struct Tile  tiles[PLAYFIELD_H_TILES+2][PLAYFIELD_W_TILES+2]; // including sentinels

@@ -158,6 +158,9 @@ void openEmpty(USHORT x, USHORT y) {
     if (tile->state == TILE_OPEN || x<1 || x > PLAYFIELD_W_TILES || y<1 || y> PLAYFIELD_H_TILES) {
         return;
     }
+    if (tile->state == TILE_MARKED_MINE) {
+        game.unmarkedMines++;
+    }
     tile->state = TILE_OPEN;
     game.closedTiles--;
     drawPlayfieldTile(x,y);
@@ -181,8 +184,8 @@ void openTile(USHORT x, USHORT y) {
 
 void gameWon() {
     // Reveal remaining unmarked mines
-    for (USHORT y = 1; y < PLAYFIELD_H_TILES; y++) {
-       for (USHORT x = 1; x < PLAYFIELD_W_TILES; x++) {
+    for (USHORT y = 1; y < PLAYFIELD_H_TILES + 1; y++) {
+       for (USHORT x = 1; x < PLAYFIELD_W_TILES + 1; x++) {
             struct Tile* t = &game.tiles[y][x];
             if (t->state == TILE_CLOSED) {
                 t->state = TILE_MARKED_MINE;
@@ -226,13 +229,40 @@ void handleLmbUp(struct IntuiMessage *msg) {
     }
 
     openTile(tileX,tileY);
-    if (game.closedTiles == game.unmarkedMines) {
-        gameWon();
+}
+
+void handleRmbDown(struct IntuiMessage *msg) {
+    // RMB. Check if we click a tile
+    USHORT tx, ty;
+    if (mouseToTile(msg->MouseX, msg->MouseY, &tx, &ty)) {
+        // Click is in a tile. Check the state
+        struct Tile *t = &game.tiles[ty][tx];
+        BOOL update = TRUE;
+        switch(t->state) {
+            case TILE_CLOSED:
+                t->state = TILE_MARKED_MINE;
+                game.unmarkedMines--;
+                break;
+            case TILE_MARKED_MINE:
+                t->state = TILE_MARKED_UNKNOWN;
+                game.unmarkedMines++;
+                break;
+            case TILE_MARKED_UNKNOWN:
+                t->state = TILE_CLOSED;
+                break;
+            default:
+                update = FALSE;
+        }
+        if (update) {
+            drawPlayfieldTile(tx, ty);
+            drawRemainingMines(game.unmarkedMines);
+        }
     }
 }
 
 void startGame() {
     newGame(&game, PLAYFIELD_H_TILES*PLAYFIELD_W_TILES*.1); // 10% mines
+    newGame(&game, 5); // 10% mines
     drawRemainingMines(game.unmarkedMines);
     drawTimer(game.ticks/50);
     drawPlayfield();
@@ -355,7 +385,6 @@ int main(int argc, char **argv) {
     uiCreate();
 
     createCopperList();
-    // findFirstCopperInstr();
     cycleCopper();
     // debug_print("copperInstr = $%08x", copperInstr);
     // dumpCopperList();
@@ -387,12 +416,19 @@ int main(int argc, char **argv) {
     while(!terminate) {
         // cycleCopper();
         WaitTOF();        
-        
+
         if (game.timerRunning) {
             game.ticks++;
             drawTimer(game.ticks/50);
             drawRemainingMines(game.unmarkedMines);
         }
+
+        if (game.running) {
+            if (game.closedTiles == game.totalMines) {
+                // Under every closed tile there must be a mine -> we won!
+                gameWon();
+            }
+        }        
 
         if (trackingMouse) {
             // Handle mouse moves
@@ -454,6 +490,9 @@ int main(int argc, char **argv) {
                     case SELECTUP:
                         // LMB
                         handleLmbUp(msg);
+                        break;
+                    case MENUDOWN:
+                        handleRmbDown(msg);
                         break;
                 }
                 break;
