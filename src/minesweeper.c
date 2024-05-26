@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include "copper.h"
 #include "game.h"
 #include "images.h"
 #include "debug.h"
@@ -53,7 +54,6 @@ struct Image *tileWithCounts[] = {
     &imgTile7,
     &imgTile8,
 };
-
 
 void drawRemainingMines(int mines) {
     if (mines < 0) {
@@ -120,7 +120,6 @@ void drawPlayfield() {
         }
     }
 }
-
 
 BOOL mouseToTile(SHORT mouseX, SHORT mouseY, USHORT *tileX, USHORT *tileY) {
     mouseX -= PLAYFIELD_X;
@@ -282,91 +281,6 @@ void startGame(int d) {
     trackingMouse = FALSE;
 }
 
-UWORD *copperInstr;
-#define COPPER_LINES 32
-#define COPPER_FIRST_LINE 1
-
-void cycleCopper() {
-    static UWORD spectrum[] =
-          {
-                0x0604, 0x0605, 0x0606, 0x0607, 0x0617, 0x0618, 0x0619, 0x0629,
-                0x072a, 0x073b, 0x074b, 0x074c, 0x075d, 0x076e, 0x077e, 0x088f,
-                0x07af, 0x06cf, 0x05ff, 0x04fb, 0x04f7, 0x03f3, 0x07f2, 0x0bf1,
-                0x0ff0, 0x0fc0, 0x0ea0, 0x0e80, 0x0e60, 0x0d40, 0x0d20, 0x0d00,
-                0x0604, 0x0605, 0x0606, 0x0607, 0x0617, 0x0618, 0x0619, 0x0629,
-                0x072a, 0x073b, 0x074b, 0x074c, 0x075d, 0x076e, 0x077e, 0x088f,
-                0x07af, 0x06cf, 0x05ff, 0x04fb, 0x04f7, 0x03f3, 0x07f2, 0x0bf1,
-                0x0ff0, 0x0fc0, 0x0ea0, 0x0e80, 0x0e60, 0x0d40, 0x0d20, 0x0d00
-          }
-          ;
-
-    static int pos = 0;
-    UWORD *copWord = copperInstr + 1;
-    for (int i = 0; i < COPPER_LINES; i++) {
-        *copWord = spectrum[pos+i];
-        copWord += 4;
-    }
-    pos = (pos+1)%COPPER_LINES;
-}
-
-void dumpCopperList() {
-    debug_print("Copperlist:","");
-    UWORD *instr = GfxBase->LOFlist;
-    for(;;) {
-        UWORD w1 = *instr;
-        UWORD w2 = *(instr+1);
-        debug_print("$%08x: $%04x, $%04x", instr, w1,w2);
-        if (w1 == 0xffff && w2 == 0xfffe) {
-            break;
-        }
-        instr+=2;
-    }
-}
-
-void createCopperList() {
-    /*  Allocate memory for the Copper list.  */
-    /*  Make certain that the initial memory is cleared.  */
-    struct UCopList *uCopList = (struct UCopList *) AllocMem(sizeof(struct UCopList), MEMF_PUBLIC|MEMF_CLEAR);
-    if (!uCopList) {
-        fprintf(stderr, "Not enough memory to allocate copperlist");
-        Exit(FALSE);
-    }
-
-    /*  Initialize the Copper list buffer.  */
-    CINIT(uCopList, 2*(COPPER_LINES+1)); // CWAIT and CMOVE per color.
-
-    /*  Load in each color.  */
-    int i;
-    for (i=0; i<COPPER_LINES; i++) {
-        CWAIT(uCopList, COPPER_FIRST_LINE + i, 0);
-        CMOVE(uCopList, custom.color[15], 0x1234);
-    }
-    CWAIT(uCopList, COPPER_FIRST_LINE + i, 0);
-    CMOVE(uCopList, custom.color[0], palette[0]);
-
-    CEND(uCopList); /*  End the Copper list  */
-
-    Forbid();
-    screen->ViewPort.UCopIns = uCopList;
-    Permit();
-
-    RethinkDisplay();       /*  Display the new Copper list.  */
-
-    // No, find the first of our CMOVEs
-    UWORD *instr = GfxBase->LOFlist;
-    for(;;) {
-        UWORD w1 = *instr;
-        UWORD w2 = *(instr+1);
-        if (w1 == 0x19e && w2 == 0x1234) {
-            // CMOVE found!
-            copperInstr = instr;
-            break;
-        }
-        instr+=2;
-    }
-
-}
-
 int main(int argc, char **argv) {
     printf("LOGO X1: %d\n", HEADER_X+HEADER_W);
     printf("LOGO Y2: %d\n", PLAYFIELD_Y - PLAYFIELD_BORDER);
@@ -388,17 +302,15 @@ int main(int argc, char **argv) {
 
     uiCreate(DIFFUCLTY_NOVICE);
 
-    createCopperList();
-    cycleCopper();
-    // debug_print("copperInstr = $%08x", copperInstr);
-    // dumpCopperList();
+    copperCreateList();
+    copperAnimate();
 
     startGame(DIFFUCLTY_NOVICE);
 
     struct IntuiMessage *msg;
     terminate = FALSE;
     while(!terminate) {
-        // cycleCopper();
+        copperAnimate();
         WaitTOF();        
 
         if (game.timerRunning) {

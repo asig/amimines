@@ -4,6 +4,7 @@ VBCCFLAGS = -dontwarn=51 -dontwarn=214 -DDEBUG
 
 OBJS = \
   gen/images.o \
+  gen/copper.o \
   gen/debug.o \
   gen/game.o \
   gen/mem.o \
