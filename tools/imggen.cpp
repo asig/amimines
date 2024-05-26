@@ -193,7 +193,7 @@ int main(int argc, char **argv) {
 
     // logo
     extractImage(0,top,182,40,bitDepth, "imgLogo", headerStream, implStream);
-    top += 63;
+    top += 40;
 
     // quit button
     extractImage(0*7,top,7,7,bitDepth, "btnQuit", headerStream, implStream);
