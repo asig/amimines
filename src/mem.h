@@ -3,7 +3,7 @@
 
 #include <proto/exec.h>
 
-void registerMem(void *mem, ULONG sz);
-void freeAllMem();
+void memRegister(void *mem, ULONG sz);
+void memFreeAll();
 
 #endif

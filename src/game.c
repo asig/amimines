@@ -7,6 +7,7 @@ void newGame(struct Game *game, USHORT mines) {
 	game->timerRunning = FALSE;
 	game->ticks = 0;
 	game->unmarkedMines = mines;
+	game->closedTiles = PLAYFIELD_H_TILES * PLAYFIELD_W_TILES;
 
 	for(USHORT y = 0; y < PLAYFIELD_H_TILES + 1; y++) {
 		for(USHORT x = 0; x < PLAYFIELD_W_TILES+1; x++) {

@@ -1,12 +1,9 @@
+#include <clib/dos_protos.h>
+#include <exec/types.h>
 #include <proto/exec.h>
-#include <proto/dos.h>
 #include <proto/intuition.h>
-#include <proto/graphics.h>
 #include <graphics/gfxbase.h>
 #include <graphics/gfxmacros.h>
-#include <graphics/copper.h>
-#include <devices/inputevent.h>
-#include <intuition/intuition.h>
 #include <hardware/custom.h>
 
 #include <stdio.h>
@@ -17,45 +14,15 @@
 #include "graphics.h"
 #include "images.h"
 #include "debug.h"
-
-#define HEADER_X 4
-#define HEADER_Y 0
-#define HEADER_BORDER 4
-#define HEADER_MARGIN 5
-#define HEADER_H (2*HEADER_BORDER+2*HEADER_MARGIN+23+2)
-#define HEADER_W (HEADER_BORDER+HEADER_MARGIN+(39+2)+HEADER_MARGIN+24+HEADER_MARGIN+(39+2)+HEADER_MARGIN+HEADER_BORDER)
-
-#define REMAINING_MINES_X (HEADER_X+HEADER_BORDER+HEADER_MARGIN+1)
-#define REMAINING_MINES_Y (HEADER_Y+HEADER_BORDER+HEADER_MARGIN+1)
-
-#define TIMER_X (HEADER_X+HEADER_W-HEADER_BORDER-HEADER_MARGIN-39-1)
-#define TIMER_Y (HEADER_Y+HEADER_BORDER+HEADER_MARGIN+1)
-
-#define SMILEY_X (HEADER_X+HEADER_W/2-12)
-#define SMILEY_Y (HEADER_Y+HEADER_H/2-12)
-
-#define LOGO_X (HEADER_X+HEADER_W)
-#define LOGO_Y 0
-// #define LOGO_BORDER 4
-// #define LOGO_MARGIN 5
-// #define LOGO_H (2*HEADER_BORDER+2*HEADER_MARGIN+23+2)
-// #define LOGO_W (320-HEADER_X-LOGO_X)
-// #define LOGO_H (2*HEADER_BORDER+2*HEADER_MARGIN+23+2)
-// #define LOGO_W (320-LOGO_X)
-
-#define PLAYFIELD_BORDER 4
-#define PLAYFIELD_X (HEADER_X + PLAYFIELD_BORDER)
-#define PLAYFIELD_Y (HEADER_Y + HEADER_H + 20 + PLAYFIELD_BORDER)
+#include "layout.h"
+#include "ui.h"
 
 extern struct Custom custom;
 struct IntuitionBase *IntuitionBase;
 struct GfxBase *GfxBase;
-struct Screen *screen;
-struct Window *window;
 
 struct Game game;
 
-ULONG ticks;
 BOOL terminate;
 SHORT tileX;
 SHORT tileY;
@@ -86,19 +53,6 @@ struct Image *tileWithCounts[] = {
     &imgTile8,
 };
 
-void createWindow();
-void doButtons(struct IntuiMessage *msg);
-void drawRemainingMines(int mines);
-void drawTimer(int secs);
-void drawPlayfieldTile(int x, int y);
-void drawPlayfield();
-void createCopperList();
-
-// void clearRemainingMines() {
-//     DrawImage(window->RPort, &imgDigitEmpty, REMAINING_MINES_X, REMAINING_MINES_Y);
-//     DrawImage(window->RPort, &imgDigitEmpty, REMAINING_MINES_X+1*imgDigit0.Width, REMAINING_MINES_Y);
-//     DrawImage(window->RPort, &imgDigitEmpty, REMAINING_MINES_X+2*imgDigit0.Width, REMAINING_MINES_Y);
-// }
 
 void drawRemainingMines(int mines) {
     if (mines < 0) {
@@ -166,82 +120,6 @@ void drawPlayfield() {
     }
 }
 
-struct NewScreen newScreen = {
-    0,0,
-    320, /* width */
-    256, /* height (PAL version) */
-    4, /* bitplances */
-    1,2, /* detail pen, block pen */
-    0, // ViewModes
-    CUSTOMSCREEN | SCREENQUIET, // Type
-    NULL, // Font
-    NULL, // title
-    NULL, // Gadgets
-    NULL, // CustomBitmap
-};
-
-#define GADGET_QUIT 1
-#define GADGET_FACE 2
-struct Gadget quitGadget = {
-    NULL, /* NextGadget */
-    320-btnQuit_W, 0, /* LeftEdge, TopEdge */
-    btnQuit_W, btnQuit_H, /* Width, Height */
-    GADGIMAGE|GADGHIMAGE, /* Flags */
-    RELVERIFY, /* Activation */
-    BOOLGADGET, /* Gadget Type */
-    (APTR)&btnQuit, /* GadgetRender */
-    (APTR)&btnQuitPressed, /* Select Render */
-    NULL, /* GadgetText */
-    0, /* MutualExclude */
-    NULL, /* Speciallnfo */
-    GADGET_QUIT, /* GadgetID */
-    NULL, /* UserData */
-};
-struct Gadget faceGadget = {
-    &quitGadget, /* NextGadget */
-    SMILEY_X, SMILEY_Y, /* LeftEdge, TopEdge */
-    imgFaceNormal_W, imgFaceNormal_H, /* Width, Height */
-    GADGIMAGE|GADGHIMAGE, /* Flags */
-    RELVERIFY, /* Activation */
-    BOOLGADGET, /* Gadget Type */
-    (APTR)&imgFaceNormal, /* GadgetRender */
-    (APTR)&imgFacePressed, /* Select Render */
-    NULL, /* GadgetText */
-    0, /* MutualExclude */
-    NULL, /* Speciallnfo */
-    GADGET_FACE, /* GadgetID */
-    NULL, /* UserData */
-};
-struct NewWindow newWindow = {
-    0, 0, /* X- und Y-Position */
-    320, 256, /* Breite, H he */
-    1, 2, /* Farben (0-15) */
-    CLOSEWINDOW | MOUSEBUTTONS | GADGETUP, // | INTUITICKS,
-    ACTIVATE | BORDERLESS | RMBTRAP , // | SMART_REFRESH | ACTIVATE | WINDOWSIZING | SIZEBRIGHT | WINDOWDRAG | WINDOWDEPTH | BORDERLESS,
-    &faceGadget,
-    NULL,
-    NULL, // Title
-    NULL, // Screen
-    NULL,
-    320, 256, // min size
-    320, 256, // max size
-    CUSTOMSCREEN
-};
-
-void createWindow() {
-    screen = OpenScreen(&newScreen);
-    if (!screen) {
-        fprintf(stderr, "Can't open screen!");
-        Exit(FALSE);
-    }
-    newWindow.Screen = screen;
-    window = OpenWindow(&newWindow);
-    if (!window) {
-        fprintf(stderr, "Can't open window!");
-        Exit(FALSE);
-    }
-    LoadRGB4(&screen->ViewPort, palette, NUM_COLS);
-}
 
 BOOL mouseToTile(SHORT mouseX, SHORT mouseY, USHORT *tileX, USHORT *tileY) {
     mouseX -= PLAYFIELD_X;
@@ -258,12 +136,13 @@ BOOL mouseToTile(SHORT mouseX, SHORT mouseY, USHORT *tileX, USHORT *tileY) {
 
 void diedAt(USHORT tx, USHORT ty) {
     game.running = FALSE;
+    game.timerRunning = FALSE;
     drawPlayfieldTileExplicit(tx,ty, &imgTileMineExploded);
     DrawImage(window->RPort, &imgFaceSad, SMILEY_X, SMILEY_Y);
 
     // Reveal all non-selected mines, highlight all false marked mines
-    for (USHORT y = 1; y < PLAYFIELD_H_TILES; y++) {
-       for (USHORT x = 1; x < PLAYFIELD_W_TILES; x++) {
+    for (USHORT y = 1; y < PLAYFIELD_H_TILES + 1; y++) {
+       for (USHORT x = 1; x < PLAYFIELD_W_TILES + 1; x++) {
             struct Tile* t = &game.tiles[y][x];
             if (t->state == TILE_MARKED_MINE && !t->mine) {
                 drawPlayfieldTileExplicit(x,y, &imgTileMineWrong);      
@@ -280,6 +159,7 @@ void openEmpty(USHORT x, USHORT y) {
         return;
     }
     tile->state = TILE_OPEN;
+    game.closedTiles--;
     drawPlayfieldTile(x,y);
     if (tile->surroundingMines == 0) {
         openEmpty(x-1,y-1); openEmpty(x,y-1); openEmpty(x+1,y-1);
@@ -297,6 +177,23 @@ void openTile(USHORT x, USHORT y) {
     } else {
         openEmpty(x, y);
     }
+}
+
+void gameWon() {
+    // Reveal remaining unmarked mines
+    for (USHORT y = 1; y < PLAYFIELD_H_TILES; y++) {
+       for (USHORT x = 1; x < PLAYFIELD_W_TILES; x++) {
+            struct Tile* t = &game.tiles[y][x];
+            if (t->state == TILE_CLOSED) {
+                t->state = TILE_MARKED_MINE;
+                drawPlayfieldTileExplicit(x,y, &imgTileFlagged);
+            }
+       }
+    }
+
+    game.running = FALSE;
+    game.timerRunning = FALSE;
+    DrawImage(window->RPort, &imgFaceGlasses, SMILEY_X, SMILEY_Y);
 }
 
 void handleLmbDown(struct IntuiMessage *msg) {
@@ -323,8 +220,14 @@ void handleLmbUp(struct IntuiMessage *msg) {
 
     game.timerRunning = TRUE;
 
-    if (tileX > -0 && tileY > 0) {
-        openTile(tileX,tileY);
+    if (tileX == 0 || tileY == 0) {
+        // mouse outside playfield
+        return;
+    }
+
+    openTile(tileX,tileY);
+    if (game.closedTiles == game.unmarkedMines) {
+        gameWon();
     }
 }
 
@@ -336,16 +239,107 @@ void startGame() {
     trackingMouse = FALSE;
 }
 
+// int main(int argc, char **argv) {
+//     printf("Hello! You passed these args:\n");
+//     int i = 0;
+//     while (*argv) {
+//         printf("%d: %s\n", i++, *argv++);
+//     }
+//     return 0;
+// }
+
+UWORD *copperInstr;
+#define COPPER_LINES 32
+#define COPPER_FIRST_LINE 1
+
+void cycleCopper() {
+    static UWORD spectrum[] =
+          {
+                0x0604, 0x0605, 0x0606, 0x0607, 0x0617, 0x0618, 0x0619, 0x0629,
+                0x072a, 0x073b, 0x074b, 0x074c, 0x075d, 0x076e, 0x077e, 0x088f,
+                0x07af, 0x06cf, 0x05ff, 0x04fb, 0x04f7, 0x03f3, 0x07f2, 0x0bf1,
+                0x0ff0, 0x0fc0, 0x0ea0, 0x0e80, 0x0e60, 0x0d40, 0x0d20, 0x0d00,
+                0x0604, 0x0605, 0x0606, 0x0607, 0x0617, 0x0618, 0x0619, 0x0629,
+                0x072a, 0x073b, 0x074b, 0x074c, 0x075d, 0x076e, 0x077e, 0x088f,
+                0x07af, 0x06cf, 0x05ff, 0x04fb, 0x04f7, 0x03f3, 0x07f2, 0x0bf1,
+                0x0ff0, 0x0fc0, 0x0ea0, 0x0e80, 0x0e60, 0x0d40, 0x0d20, 0x0d00
+          }
+          ;
+
+    static int pos = 0;
+    UWORD *copWord = copperInstr + 1;
+    for (int i = 0; i < COPPER_LINES; i++) {
+        *copWord = spectrum[pos+i];
+        copWord += 4;
+    }
+    pos = (pos+1)%COPPER_LINES;
+}
+
+void dumpCopperList() {
+    debug_print("Copperlist:","");
+    UWORD *instr = GfxBase->LOFlist;
+    for(;;) {
+        UWORD w1 = *instr;
+        UWORD w2 = *(instr+1);
+        debug_print("$%08x: $%04x, $%04x", instr, w1,w2);
+        if (w1 == 0xffff && w2 == 0xfffe) {
+            break;
+        }
+        instr+=2;
+    }
+}
+
+void createCopperList() {
+    /*  Allocate memory for the Copper list.  */
+    /*  Make certain that the initial memory is cleared.  */
+    struct UCopList *uCopList = (struct UCopList *) AllocMem(sizeof(struct UCopList), MEMF_PUBLIC|MEMF_CLEAR);
+    if (!uCopList) {
+        fprintf(stderr, "Not enough memory to allocate copperlist");
+        Exit(FALSE);
+    }
+
+    /*  Initialize the Copper list buffer.  */
+    CINIT(uCopList, 2*(COPPER_LINES+1)); // CWAIT and CMOVE per color.
+
+    /*  Load in each color.  */
+    int i;
+    for (i=0; i<COPPER_LINES; i++) {
+        CWAIT(uCopList, COPPER_FIRST_LINE + i, 0);
+        CMOVE(uCopList, custom.color[15], 0x1234);
+    }
+    CWAIT(uCopList, COPPER_FIRST_LINE + i, 0);
+    CMOVE(uCopList, custom.color[0], palette[0]);
+
+    CEND(uCopList); /*  End the Copper list  */
+
+    Forbid();
+    screen->ViewPort.UCopIns = uCopList;
+    Permit();
+
+    RethinkDisplay();       /*  Display the new Copper list.  */
+
+    // No, find the first of our CMOVEs
+    UWORD *instr = GfxBase->LOFlist;
+    for(;;) {
+        UWORD w1 = *instr;
+        UWORD w2 = *(instr+1);
+        if (w1 == 0x19e && w2 == 0x1234) {
+            // CMOVE found!
+            copperInstr = instr;
+            break;
+        }
+        instr+=2;
+    }
+
+}
+
 int main(int argc, char **argv) {
     printf("LOGO X1: %d\n", HEADER_X+HEADER_W);
     printf("LOGO Y2: %d\n", PLAYFIELD_Y - PLAYFIELD_BORDER);
 
-
     srand(time(NULL));
     debug_init();
-
-    ticks = 0;
-    
+   
     IntuitionBase = (struct IntuitionBase*)OpenLibrary("intuition.library", 0);
     if (!IntuitionBase) {
         fprintf(stderr, "Can't open intuition.library!");
@@ -358,9 +352,13 @@ int main(int argc, char **argv) {
         Exit(FALSE);
     }
 
-    createWindow();
+    uiCreate();
 
     createCopperList();
+    // findFirstCopperInstr();
+    cycleCopper();
+    // debug_print("copperInstr = $%08x", copperInstr);
+    // dumpCopperList();
 
     // Draw header part 
     border(window->RPort, HEADER_X, HEADER_Y, HEADER_W, HEADER_H, HEADER_BORDER, COL_DGRAY, COL_LGRAY, COL_GRAY);
@@ -387,7 +385,8 @@ int main(int argc, char **argv) {
     struct IntuiMessage *msg;
     terminate = FALSE;
     while(!terminate) {
-        WaitTOF();
+        // cycleCopper();
+        WaitTOF();        
         
         if (game.timerRunning) {
             game.ticks++;
@@ -434,10 +433,10 @@ int main(int argc, char **argv) {
                 {
                     int gadgetId = ((struct Gadget *) msg->IAddress)->GadgetID;
                     switch(gadgetId) {
-                        case GADGET_QUIT:
+                        case GADGET_ID_QUIT:
                             terminate = TRUE;
                             break;
-                        case GADGET_FACE:
+                        case GADGET_ID_FACE:
                             startGame();
                             break;
                         default:
@@ -464,96 +463,16 @@ int main(int argc, char **argv) {
     }
 
     // Remove Copperlist
-    struct ViewPort *viewPort = &screen->ViewPort; //ViewPortAddress(window);     /*  Get a pointer to the ViewPort.  */
+    struct ViewPort *viewPort = &screen->ViewPort;
     FreeVPortCopLists(viewPort);
     RemakeDisplay();
 
-    CloseWindow(window);
-    CloseScreen(screen);
+    uiClose();
+
     CloseLibrary((struct Library*)GfxBase);
     CloseLibrary((struct Library*)IntuitionBase);
 
-    printf("Minesweeper ran for %ld ticks\n", ticks);
-
     debug_shutdown();
 
-    struct Tile tile[4];
-    struct Tile2 tile2[4];
-    printf("Tile: size = %d\n", sizeof(tile));
-    printf("Tile2: size = %d\n", sizeof(tile2));
     return 0;
-}
-
-// int main(int argc, char **argv) {
-//     printf("Hello! You passed these args:\n");
-//     int i = 0;
-//     while (*argv) {
-//         printf("%d: %s\n", i++, *argv++);
-//     }
-//     return 0;
-// }
-
-void dumpCopperList() {
-    UWORD *instr = GfxBase->LOFlist;
-    
-    for(;;) {
-        UWORD w1 = *(instr++);
-        UWORD w2 = *(instr++);
-        if ((w1 & 1) == 0) {        
-            printf("MOVE $%04x, $%04x\n", w1, w2);            
-        } else if ((w1 & 1) == 1) {
-             printf("MOVE $%04x, $%04x\n", w1, w2);                        
-        }
-    }
-
-}
-
-void createCopperList() {
-register USHORT   i, scanlines_per_color;
-         WORD     ret_val    = RETURN_OK;
-struct   ViewPort *viewPort;
-struct   UCopList *uCopList  = NULL;
-
-UWORD    spectrum[] =
-          {
-                0x0604, 0x0605, 0x0606, 0x0607, 0x0617, 0x0618, 0x0619,
-                0x0629, 0x072a, 0x073b, 0x074b, 0x074c, 0x075d, 0x076e,
-                0x077e, 0x088f, 0x07af, 0x06cf, 0x05ff, 0x04fb, 0x04f7,
-                0x03f3, 0x07f2, 0x0bf1, 0x0ff0, 0x0fc0, 0x0ea0, 0x0e80,
-                0x0e60, 0x0d40, 0x0d20, 0x0d00
-          };
-
-#define NUMCOLORS 32
-
-        /*  Allocate memory for the Copper list.  */
-        /*  Make certain that the initial memory is cleared.  */
-        uCopList = (struct UCopList *) AllocMem(sizeof(struct UCopList), MEMF_PUBLIC|MEMF_CLEAR);
-        if (!uCopList) {
-            fprintf(stderr, "Not enough memory to allocate copperlist");
-            Exit(FALSE);
-        }
-
-        /*  Initialize the Copper list buffer.  */
-        CINIT(uCopList, NUMCOLORS);
-
-        scanlines_per_color = screen->Height/NUMCOLORS;
-
-        /*  Load in each color.  */
-        for (i=0; i<NUMCOLORS; i++) {
-            CWAIT(uCopList, i, 0);
-            CMOVE(uCopList, custom.color[0], spectrum[i]);
-        }
-        CWAIT(uCopList, i, 0);
-        CMOVE(uCopList, custom.color[0], palette[0]);
-
-        CEND(uCopList); /*  End the Copper list  */
-
-        viewPort = &screen->ViewPort; //ViewPortAddress(window);     /*  Get a pointer to the ViewPort.  */
-        Forbid();       /*  Forbid task switching while changing the Copper list.  */
-        viewPort->UCopIns=uCopList;
-        Permit();       /*  Permit task switching again.  */
-
-        RethinkDisplay();       /*  Display the new Copper list.  */
-
-        // dumpCopperList();
 }

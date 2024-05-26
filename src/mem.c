@@ -10,7 +10,7 @@ struct Block {
 
 struct Block *memRoot = NULL;
 
-void registerMem(void *mem, ULONG sz) {
+void memregister(void *mem, ULONG sz) {
     struct Block *b = AllocMem(sizeof(Block), 0);
     b->mem = mem;
     b->sz = sz;
@@ -18,7 +18,7 @@ void registerMem(void *mem, ULONG sz) {
     memRoot = b;
 }
 
-void freeAllMem() {
+void memFreeAll() {
     struct Block *cur = memRoot;
     while (cur) {
         struct Block *next = cur->next;

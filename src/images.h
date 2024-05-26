@@ -99,7 +99,7 @@ extern struct Image imgFaceGlasses;
 #define imgFacePressed_H 24
 extern struct Image imgFacePressed;
 #define imgLogo_W 182
-#define imgLogo_H 63
+#define imgLogo_H 40
 extern struct Image imgLogo;
 #define btnQuit_W 7
 #define btnQuit_H 7
@@ -107,6 +107,12 @@ extern struct Image btnQuit;
 #define btnQuitPressed_W 7
 #define btnQuitPressed_H 7
 extern struct Image btnQuitPressed;
+#define checkboxUnselected_W 7
+#define checkboxUnselected_H 7
+extern struct Image checkboxUnselected;
+#define checkboxSelected_W 7
+#define checkboxSelected_H 7
+extern struct Image checkboxSelected;
 #define NUM_COLS 16
 extern USHORT palette[NUM_COLS];
 

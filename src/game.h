@@ -5,7 +5,7 @@
 
 // Playfield size in tiles
 #define PLAYFIELD_W_TILES 19
-#define PLAYFIELD_H_TILES 11
+#define PLAYFIELD_H_TILES 13
 
 // Tile states
 #define TILE_CLOSED         0
@@ -32,6 +32,7 @@ struct Game {
     ULONG timerRunning;
     ULONG ticks;
     SHORT unmarkedMines;
+    SHORT closedTiles;
     struct Tile  tiles[PLAYFIELD_H_TILES+2][PLAYFIELD_W_TILES+2]; // including sentinels
 };
 

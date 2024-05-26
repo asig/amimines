@@ -192,7 +192,7 @@ int main(int argc, char **argv) {
     top += 24;
 
     // logo
-    extractImage(0,top,182,63,bitDepth, "imgLogo", headerStream, implStream);
+    extractImage(0,top,182,40,bitDepth, "imgLogo", headerStream, implStream);
     top += 63;
 
     // quit button
@@ -200,6 +200,10 @@ int main(int argc, char **argv) {
     extractImage(1*7,top,7,7,bitDepth, "btnQuitPressed", headerStream, implStream);
     top += 7;
 
+    // checkbox
+    extractImage(0*7,top,7,7,bitDepth, "checkboxUnselected", headerStream, implStream);
+    extractImage(1*7,top,7,7,bitDepth, "checkboxSelected", headerStream, implStream);
+    top += 7;
 
     // extract palette
     int numPalette;

@@ -8,6 +8,7 @@ OBJS = \
   gen/game.o \
   gen/graphics.o \
   gen/mem.o \
+  gen/ui.o \
   gen/minesweeper.o \
   
 
