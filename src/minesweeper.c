@@ -275,6 +275,8 @@ void startGame(int d) {
             break;
     }
     newGame(&game, mines);
+    
+    DrawImage(window->RPort, &imgFaceNormal, SMILEY_X, SMILEY_Y);
     drawRemainingMines(game.unmarkedMines);
     drawTimer(game.ticks/50);
     drawPlayfield();
