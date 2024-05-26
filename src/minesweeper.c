@@ -5,13 +5,13 @@
 #include <graphics/gfxbase.h>
 #include <graphics/gfxmacros.h>
 #include <hardware/custom.h>
+#include <clib/graphics_protos.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 
 #include "game.h"
-#include "graphics.h"
 #include "images.h"
 #include "debug.h"
 #include "layout.h"
@@ -27,6 +27,7 @@ BOOL terminate;
 SHORT tileX;
 SHORT tileY;
 BOOL trackingMouse;
+int difficulty;
 
 struct Image *digits[] = {
     &imgDigit0,
@@ -260,23 +261,26 @@ void handleRmbDown(struct IntuiMessage *msg) {
     }
 }
 
-void startGame() {
-    newGame(&game, PLAYFIELD_H_TILES*PLAYFIELD_W_TILES*.1); // 10% mines
-    newGame(&game, 5); // 10% mines
+void startGame(int d) {
+    difficulty = d;
+    int mines;
+    switch(d) {
+        case DIFFUCLTY_NOVICE:
+            mines = PLAYFIELD_H_TILES*PLAYFIELD_W_TILES*.1;  // 10% mines
+            break;
+        case DIFFUCLTY_INTERMEDIATE:
+            mines = PLAYFIELD_H_TILES*PLAYFIELD_W_TILES*.15;  // 15% mines
+            break;
+        case DIFFUCLTY_EXPERT:
+            mines = PLAYFIELD_H_TILES*PLAYFIELD_W_TILES*.2;  // 20% mines
+            break;
+    }
+    newGame(&game, mines);
     drawRemainingMines(game.unmarkedMines);
     drawTimer(game.ticks/50);
     drawPlayfield();
     trackingMouse = FALSE;
 }
-
-// int main(int argc, char **argv) {
-//     printf("Hello! You passed these args:\n");
-//     int i = 0;
-//     while (*argv) {
-//         printf("%d: %s\n", i++, *argv++);
-//     }
-//     return 0;
-// }
 
 UWORD *copperInstr;
 #define COPPER_LINES 32
@@ -382,34 +386,14 @@ int main(int argc, char **argv) {
         Exit(FALSE);
     }
 
-    uiCreate();
+    uiCreate(DIFFUCLTY_NOVICE);
 
     createCopperList();
     cycleCopper();
     // debug_print("copperInstr = $%08x", copperInstr);
     // dumpCopperList();
 
-    // Draw header part 
-    border(window->RPort, HEADER_X, HEADER_Y, HEADER_W, HEADER_H, HEADER_BORDER, COL_DGRAY, COL_LGRAY, COL_GRAY);
-    border(window->RPort, REMAINING_MINES_X-1, REMAINING_MINES_Y-1, 39+2,23+2,1,COL_DGRAY, COL_LGRAY, COL_GRAY);
-    border(window->RPort, TIMER_X-1, TIMER_Y-1, 39+2,23+2,1,COL_DGRAY, COL_LGRAY, COL_GRAY);
-    DrawImage(window->RPort, &imgFaceNormal, SMILEY_X, SMILEY_Y);
-
-    // Draw Logo part
-    DrawImage(window->RPort, &imgLogo, LOGO_X, LOGO_Y);
-    // border(window->RPort, LOGO_X, LOGO_Y, LOGO_W, LOGO_H, LOGO_BORDER, COL_DGRAY, COL_LGRAY, COL_GRAY);
-
-    // Draw playfield border and playfield
-    border(
-        window->RPort, 
-        PLAYFIELD_X - PLAYFIELD_BORDER, 
-        PLAYFIELD_Y - PLAYFIELD_BORDER, 
-        PLAYFIELD_W_TILES*16 + 2*PLAYFIELD_BORDER, 
-        PLAYFIELD_H_TILES*16 + 2*PLAYFIELD_BORDER, 
-        PLAYFIELD_BORDER, 
-        COL_DGRAY, COL_LGRAY, COL_GRAY);
-
-    startGame();
+    startGame(DIFFUCLTY_NOVICE);
 
     struct IntuiMessage *msg;
     terminate = FALSE;
@@ -467,13 +451,18 @@ int main(int argc, char **argv) {
                 break;
             case GADGETUP:
                 {
-                    int gadgetId = ((struct Gadget *) msg->IAddress)->GadgetID;
+                    struct Gadget *gadget = (struct Gadget *) msg->IAddress;
+                    int gadgetId = gadget->GadgetID;
                     switch(gadgetId) {
                         case GADGET_ID_QUIT:
                             terminate = TRUE;
                             break;
                         case GADGET_ID_FACE:
-                            startGame();
+                            startGame(difficulty);
+                            break;
+                        case GADGET_ID_DIFFICULTY:
+                            uiUpdateRadioGroup(&uiDifficultyRadioGroup, gadget);
+                            startGame((int)gadget->UserData);
                             break;
                         default:
                             printf("*** Unknown gadget %d clicked", gadgetId);

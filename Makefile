@@ -6,7 +6,6 @@ OBJS = \
   gen/images.o \
   gen/debug.o \
   gen/game.o \
-  gen/graphics.o \
   gen/mem.o \
   gen/ui.o \
   gen/minesweeper.o \
@@ -30,3 +29,6 @@ minesweeper: $(OBJS)
 
 gen/imggen: tools/imggen.cpp
 	gcc -g $< -lstdc++ -lpng -o $@
+
+gen/infogen: tools/infogen.cpp
+	gcc -g $< -lstdc++ -o $@
