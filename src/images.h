@@ -1,4 +1,4 @@
-// Generated on Tue May 28 23:00:36 2024 from resources/items.iff
+// This file was generated from resources/items.iff
 // DO NOT MODIFY!
 
 #ifndef SRC_IMAGES_H
