@@ -30,7 +30,6 @@ static UWORD greenBand[2*COPPER_LINES];
 static UWORD blueBand[2*COPPER_LINES];
 
 /* Generated using this python code:
-
 import math;
 x_values = [2 * math.pi * i / 256 for i in range(256)]
 sin_values = [int((1+math.sin(x))*16) for x in x_values]
@@ -40,14 +39,21 @@ static USHORT sinTab[256] = {
     16, 16, 16, 17, 17, 17, 18, 18, 19, 19, 19, 20, 20, 21, 21, 21, 22, 22, 22, 23, 23, 23, 24, 24, 24, 25, 25, 25, 26, 26, 26, 27, 27, 27, 27, 28, 28, 28, 28, 29, 29, 29, 29, 29, 30, 30, 30, 30, 30, 30, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 32, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 30, 29, 29, 29, 29, 29, 28, 28, 28, 28, 27, 27, 27, 27, 26, 26, 26, 25, 25, 25, 24, 24, 24, 23, 23, 23, 22, 22, 22, 21, 21, 21, 20, 20, 19, 19, 19, 18, 18, 17, 17, 17, 16, 16, 16, 15, 15, 14, 14, 14, 13, 13, 12, 12, 12, 11, 11, 10, 10, 10, 9, 9, 9, 8, 8, 8, 7, 7, 7, 6, 6, 6, 5, 5, 5, 4, 4, 4, 4, 3, 3, 3, 3, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 8, 9, 9, 9, 10, 10, 10, 11, 11, 12, 12, 12, 13, 13, 14, 14, 14, 15, 15
 };
 
+static USHORT speedTable[256] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -3, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+
 static UBYTE redPos;
-static int redSpeed;
+static UBYTE redSpeedPos;
+static int redAcc;
 
 static UBYTE greenPos;
-static int greenSpeed;
+static UBYTE greenSpeedPos;
+static int greenAcc;
 
 static UBYTE bluePos;
-static int blueSpeed;
+static UBYTE blueSpeedPos;
+static int blueAcc;
 
 void initColorBands() {
     for (int i = 0; i < COPPER_LINES/2; i++) {
@@ -78,9 +84,13 @@ void copperAnimate() {
         *copWord = *(rp++) | *(gp++) | *(bp++);
         copWord += 4;
     }
-    redPos += redSpeed;
-    greenPos += greenSpeed;
-    bluePos += blueSpeed;
+    redPos += speedTable[redSpeedPos];
+    greenPos += speedTable[greenSpeedPos];
+    bluePos += speedTable[blueSpeedPos];
+    redSpeedPos += redAcc;
+    greenSpeedPos += greenAcc;
+    blueSpeedPos += blueAcc;
+
     // pos = (pos+1)%COPPER_LINES;
 }
 
@@ -102,11 +112,14 @@ void copperCreateList() {
     // Init all the tables and variables we need
     initColorBands();
     redPos = rand() & 0xff;
-    redSpeed = (rand() % 6) - 3;
+    redSpeedPos = rand() & 0xff;
+    redAcc = (rand() % 2 + 1) * (rand()%2 ? 1 : -1); // possible accs: -2, -1, 1, 2
     greenPos = rand() & 0xff;
-    greenSpeed = -redSpeed - 1;
+    greenSpeedPos = rand() & 0xff;
+    greenAcc = (rand() % 2 + 1) * (rand()%2 ? 1 : -1);
     bluePos = rand() & 0xff;
-    blueSpeed = redSpeed+2;
+    blueSpeedPos = rand() & 0xff;
+    blueAcc = (rand() % 2 + 1) * (rand()%2 ? 1 : -1);
 
     /*  Allocate memory for the Copper list.  */
     /*  Make certain that the initial memory is cleared.  */
