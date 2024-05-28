@@ -76,39 +76,56 @@ void IffLoader::readCMAP() {
         uint16_t r = readUint8();
         uint16_t g = readUint8();
         uint16_t b = readUint8();
-        palette_.push_back( r << 12 | g << 4 | b );
+        palette_.push_back( r/16 << 8 | g/16 << 4 | b/16 );
     }
 }
 
 void IffLoader::readBODYUncompressed() {
-    throw std::runtime_error("Uncompressed data not supported yet.");
+    planes_.resize(numPlanes_);
+    for (int i = 0; i < numPlanes_; i++) {
+        planes_[i].reserve(lineBytes_*h_);
+    }
+
+    for (int y = 0; y < h_; y++) {
+        for (int p = 0; p < numPlanes_; p++) {
+            for (int i = 0; i < lineBytes_; i++) {
+                std:uint8_t b = readUint8();
+                planes_[p].push_back(b);
+            }
+        }
+    }                                        
 }
 
 void IffLoader::readBODYRle() {
-    planes_.clear();
-    for (int p = 0; p < numPlanes_; p++) {
-        std::vector<uint8_t> data;
-        data.reserve(lineBytes_*h_);
-        int cnt = 0;
-        while (cnt < lineBytes_*h_) {
-            std:uint8_t b = readUint8();
-            if (b > 128) {
-                std::uint8_t v = readUint8();
-                for (int j = 0; j < 257-b; j++) {
-                    data.push_back(v);
-                }
-                cnt += 257-b;
-            } else if (b < 128) {
-                for (int j = 0; j < b+1; j++) {
+    // https://web.archive.org/web/20151001160251/https://www.etwright.org/lwsdk/docs/filefmts/ilbm.html
+    planes_.resize(numPlanes_);
+    for (int i = 0; i < numPlanes_; i++) {
+        planes_[i].reserve(lineBytes_*h_);
+    }
+
+    for (int y = 0; y < h_; y++) {
+        for (int p = 0; p < numPlanes_; p++) {
+            std::vector<uint8_t> data;
+            int cnt = 0;
+            while (cnt < lineBytes_) {
+                std:uint8_t b = readUint8();
+                if (b > 128) {
                     std::uint8_t v = readUint8();
-                    data.push_back(v);                                        
+                    for (int j = 0; j < 257-b; j++) {
+                        planes_[p].push_back(v);
+                    }
+                    cnt += 257-b;
+                } else if (b < 128) {
+                    for (int j = 0; j < b+1; j++) {
+                        std::uint8_t v = readUint8();
+                        planes_[p].push_back(v);                                        
+                    }
+                    cnt += b+1;
+                } else {
+                    break;
                 }
-                cnt += b+1;
-            } else {
-                break;
             }
         }
-        planes_.push_back(data);
     }
 }
 
