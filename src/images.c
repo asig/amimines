@@ -1,3 +1,6 @@
+// Generated on Tue May 28 23:00:36 2024 from resources/items.iff
+// DO NOT MODIFY!
+
 #include <intuition/intuition.h>
 #include "images.h"
 

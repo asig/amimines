@@ -1,3 +1,6 @@
+// Generated on Tue May 28 23:00:36 2024 from resources/items.iff
+// DO NOT MODIFY!
+
 #ifndef SRC_IMAGES_H
 #define SRC_IMAGES_H
 #include <intuition/intuition.h>
