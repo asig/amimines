@@ -104,9 +104,9 @@ void copperCreateList() {
     redPos = rand() & 0xff;
     redSpeed = (rand() % 6) - 3;
     greenPos = rand() & 0xff;
-    greenSpeed = (rand() % 6) - 3;
+    greenSpeed = -redSpeed - 1;
     bluePos = rand() & 0xff;
-    blueSpeed = (rand() % 6) - 3;
+    blueSpeed = redSpeed+2;
 
     /*  Allocate memory for the Copper list.  */
     /*  Make certain that the initial memory is cleared.  */
