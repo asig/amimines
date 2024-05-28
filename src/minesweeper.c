@@ -190,9 +190,11 @@ void gameWon() {
             if (t->state == TILE_CLOSED) {
                 t->state = TILE_MARKED_MINE;
                 drawPlayfieldTileExplicit(x,y, &imgTileFlagged);
+                game.unmarkedMines--;
             }
        }
     }
+    drawRemainingMines(game.unmarkedMines);
 
     game.running = FALSE;
     game.timerRunning = FALSE;
