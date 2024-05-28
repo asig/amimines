@@ -81,14 +81,6 @@ void extractImage(int imgX, int imgY, int imgW, int imgH, const std::string& str
         << "\n\n";
 }
 
-std::string datestr() {
-    char buf[256];
-    time_t t = time(NULL);
-    struct tm * p = localtime(&t);  
-    strftime(buf, sizeof(buf), "%c", p);
-    return buf;
-}
-
 int main(int argc, char **argv) {
     if (argc != 3) {
         std::cerr << "Usage: imggen <img> <dest> " << std::endl;
@@ -116,7 +108,7 @@ int main(int argc, char **argv) {
     std::ofstream headerStream;
     headerStream.open(dest + ".h");
     headerStream
-        << "// Generated on " << datestr() << " from " << filename << "\n"
+        << "// This file was generated from " << filename << "\n"
         << "// DO NOT MODIFY!\n\n"
         << "#ifndef " << makeDefineName(dest) << "\n"
         << "#define " << makeDefineName(dest) << "\n"
@@ -126,7 +118,7 @@ int main(int argc, char **argv) {
     std::ofstream implStream;
     implStream.open(dest + ".c");
     implStream 
-        << "// Generated on " << datestr() << " from " << filename << "\n"
+        << "// This file was generated from " << filename << "\n"
         << "// DO NOT MODIFY!\n\n"
         << "#include <intuition/intuition.h>\n"
         << "#include \"images.h\"\n\n"
