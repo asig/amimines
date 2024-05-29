@@ -5,46 +5,67 @@
 #include <vector>
 #include <cstdint>
 
-class ImageLoader {
-public:
-    ImageLoader() :
-        imageComputed_(false) {}
 
-    virtual ~ImageLoader() {}
-    
-    virtual int numPlanes() const {
-        return numPlanes_;
+class Image {
+public:
+    Image();
+    Image(int w, int h, int depth, int lineBytes, const std::vector<std::uint8_t>& data);
+    Image(int w, int h, int depth, int lineBytes, const std::vector<std::vector<std::uint16_t> >& planes);
+
+    Image extract(int x, int y, int w, int h) const;
+
+    const std::vector<std::uint16_t>& bitplane(int p) const {
+        return planes_[p];
     }
 
+    const std::vector<std::uint8_t>& data() const {
+        return data_;
+    }
+
+    int w() const {
+        return w_;
+    }
+
+    int h() const {
+        return h_;
+    }
+
+    int lineBytes() const {
+        return lineBytes_;
+    }
+
+    int depth() const {
+        return depth_;
+    }
+
+private:
+    int w_;
+    int h_;
+    int depth_;
+    int lineBytes_;
+    std::vector<std::uint8_t> data_;
+    std::vector<std::vector<std::uint16_t> > planes_;
+};
+
+
+class ImageLoader {
+public:
+    ImageLoader() {}
+    virtual ~ImageLoader() { }
+    
     virtual const std::vector<std::uint16_t>& palette() {
         return palette_;
     }
 
-    virtual const std::vector<std::uint8_t>& bitplane(int plane) {
-        return planes_[plane];
+    virtual Image image() const {
+        return image_;
     }
 
-    virtual int w() const {
-        return w_;
-    }
-
-    virtual int h() const {
-        return h_;
-    }
-
-    virtual const std::vector<std::uint8_t>& image();
+    static ImageLoader *get(FILE *fp);
 
 protected:
-    std::uint16_t w_, h_;
-    std::uint8_t numPlanes_;
-    std::uint16_t lineBytes_;
+    Image image_;
     std::vector<std::uint16_t> palette_;
-    std::vector<std::vector<std::uint8_t> > planes_;
-
-private:
-    bool imageComputed_;
-    std::vector<std::uint8_t> image_;
-
 };
 
 class PngLoader : public ImageLoader {
@@ -64,8 +85,12 @@ public:
 
 private:
     FILE *fp_;
-
+    int lineBytes_;
+    int w_;
+    int h_;
+    int numPlanes_;
     std::uint8_t compressionMode_;
+    std::vector<std::vector<std::uint16_t> > planes_;
 
     void readBMHD();
     void readCMAP();
@@ -79,5 +104,3 @@ private:
     std::uint16_t readUint16();
     std::uint8_t readUint8();
 };
-
-ImageLoader *getLoader(FILE *fp);

@@ -10,6 +10,7 @@
 #include "imgloader.h"
 
 ImageLoader *loader;
+Image image;
 
 std::string makeDefineName(const std::string& s) {
     std::string res = s;
@@ -25,28 +26,8 @@ std::string toHex(std::uint16_t val) {
 
 void extractImage(int imgX, int imgY, int imgW, int imgH, const std::string& structName, std::ofstream& headerStream, std::ofstream& implStream) {
     
-    int bitDepth = loader->numPlanes();
-    const std::vector<std::uint8_t> image = loader->image();
-
-    // Build the actual planes
-    int planeWWords = ((imgW+15)/16); // width in words;
-    std::uint16_t planes[bitDepth][planeWWords * imgH];
-    for(int i = 0; i < bitDepth; i++) {
-        uint8_t mask = 1 << i;
-        for (int y = 0; y < imgH; y++) {
-            for (int w = 0; w < planeWWords; w++) {
-                planes[i][planeWWords * y + w] = 0;
-                for (int x = 0; x < 16; x++) {
-                    int iX = w * 16 + x;
-                    if (iX >= imgW) continue;
-                    uint8_t col = image[(imgY+y)*loader->w() + imgX + iX];                    
-                    if (col & mask) {
-                        planes[i][planeWWords * y + w] |= 1 << (15-x);
-                    }
-                }
-            }
-        }
-    }
+    Image img = image.extract(imgX, imgY, imgW, imgH);
+    int bitDepth = image.depth();
 
     // Header
     headerStream 
@@ -59,11 +40,13 @@ void extractImage(int imgX, int imgY, int imgW, int imgH, const std::string& str
     implStream 
         << "static USHORT CHIPMEM " << structName << "_imageData[] = {\n";
     for (int i = 0; i < bitDepth; i++) {
+        const std::vector<std::uint16_t>& plane = img.bitplane(i);
+        int planeWWords = img.lineBytes()/2;
         implStream << "  // Plane " << i << "\n";
         for (int y = 0; y < imgH; y++) {
             implStream << "  ";
             for (int w = 0; w < planeWWords; w++) {
-                implStream << toHex(planes[i][y*planeWWords + w]) << ", ";
+                implStream << toHex(plane[y*planeWWords + w]) << ", ";
             }
             implStream << "\n";
         }                        
@@ -96,12 +79,13 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    loader = getLoader(fp);
+    loader = ImageLoader::get(fp);
     fclose(fp);
     if (!loader) {
         std::cerr << filename << " is an unsupported image format." << std::endl;
         exit(1);
     }
+    image = loader->image();
 
 
     // open files
@@ -127,9 +111,6 @@ int main(int argc, char **argv) {
         << "#else\n"
         << "#define CHIPMEM  __attribute__((section (\".MEMF_CHIP\")))\n"
         << "#endif\n\n";
-
-
-    int bitDepth = loader->numPlanes();
 
     // Digits
     int top = 0;
