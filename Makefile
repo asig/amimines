@@ -1,7 +1,7 @@
 .PHONY: clean adf pre-build
 
 AMIGA_CC = vc
-AMIGA_CC_FLAGS = +kick13 -dontwarn=51 -dontwarn=214 -DDEBUG
+AMIGA_CC_FLAGS = +kick13 -dontwarn=51 -dontwarn=214 #-DDEBUG
 
 AMIGA_LD = vc
 AMIGA_LD_FLAGS = +kick13 -lamiga
@@ -18,15 +18,15 @@ OBJS = \
   $(OBJDIR)/copper.o \
   $(OBJDIR)/debug.o \
   $(OBJDIR)/game.o \
-  $(OBJDIR)/mem.o \
   $(OBJDIR)/ui.o \
   $(OBJDIR)/main.o \
   
 
-all: $(BUILDDIR)/amimines
+all: AmiMines.adf
 
 clean:
 	@rm -rf $(BUILDDIR)/*
+	@rm -rf AmiMines.adf
 
 pre-build:
 	@mkdir -p $(TOOLSDIR)
@@ -38,7 +38,7 @@ src/images.c: $(TOOLSDIR)/imggen resources/elements.iff
 $(OBJDIR)/%.o: src/%.c
 	$(AMIGA_CC) $(AMIGA_CC_FLAGS) $< -c -o $@
 
-$(BUILDDIR)/amimines: pre-build $(OBJS)
+$(BUILDDIR)/AmiMines: pre-build $(OBJS)
 	$(AMIGA_LD) $(AMIGA_LD_FLAGS) $(OBJS) -o $@
 
 $(TOOLSDIR)/imggen: tools/imggen.cpp tools/imgloader.cpp tools/imgloader.h
@@ -47,7 +47,32 @@ $(TOOLSDIR)/imggen: tools/imggen.cpp tools/imgloader.cpp tools/imgloader.h
 $(TOOLSDIR)/infogen: tools/infogen.cpp tools/imgloader.cpp tools/imgloader.h
 	$(HOST_CC) $(HOST_CC_FLAGS) tools/infogen.cpp tools/imgloader.cpp -lstdc++ -lpng -o $@
 
-adf: minesweeper resources/icons.iff $(TOOLSDIR)/infogen
-	mkdir -p build/adf
-	$(TOOLSDIR)/infogen --type TOOL --stacksize 10240 --icon resources/icons.iff@0,0,64,32 --icon resources/icons.iff@96,0,64,32 --x 10 --y 10 build/adf/minesweeper.info
+$(BUILDDIR)/AmiMines.info: pre-build resources/icons.iff $(TOOLSDIR)/infogen
+	$(TOOLSDIR)/infogen \
+	    --type TOOL \
+		--stacksize 10240 \
+		--icon resources/icons.iff@0,0,64,32 \
+		--icon resources/icons.iff@96,0,64,32 \
+		--x 60 \
+		--y 30 $@
 
+$(BUILDDIR)/Disk.info: pre-build resources/icons.iff $(TOOLSDIR)/infogen
+	$(TOOLSDIR)/infogen \
+	    --type DISK \
+		--icon resources/icons.iff@0,36,43,21 \
+		--icon resources/icons.iff@43,36,43,21 \
+		--x 50 \
+		--y 10 $@
+
+AmiMines.adf: $(BUILDDIR)/AmiMines $(BUILDDIR)/AmiMines.info $(BUILDDIR)/Disk.info
+	rm -rf $@
+	xdftool $@ \
+	  create \
+	  + format 'AmiMines' ofs \
+	  + boot install boot1x \
+	  + makedir s \
+	  + write resources/startup-sequence s/ \
+	  + write $(BUILDDIR)/Disk.info / \
+	  + write $(BUILDDIR)/AmiMines / \
+	  + write $(BUILDDIR)/AmiMines.info /
+		
