@@ -34,7 +34,7 @@ gen/imggen: tools/imggen.cpp tools/imgloader.cpp tools/imgloader.h
 gen/infogen: tools/infogen.cpp tools/imgloader.cpp tools/imgloader.h
 	gcc -g tools/infogen.cpp tools/imgloader.cpp -lstdc++ -lpng -o $@
 
-adf: minesweeper resources/icon.iff gen/infogen
+adf: minesweeper resources/icons.iff gen/infogen
 	mkdir -p build/adf
-	gen/infogen --type TOOL --stacksize 10240 --icon resources/icon.iff@0,0,64,32 --icon resources/icon.iff@96,0,64,32 --x 10 --y 10 build/adf/minesweeper.info
+	gen/infogen --type TOOL --stacksize 10240 --icon resources/icons.iff@0,0,64,32 --icon resources/icons.iff@96,0,64,32 --x 10 --y 10 build/adf/minesweeper.info
 
