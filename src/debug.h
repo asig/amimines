@@ -16,9 +16,9 @@ void dbg_shutdown();
 
 # else 
 
-#define debug_print(fmt, ...)
-#define debug_init 
-#define debug_shutdown 
+#define debug_print(fmt, ...) {}
+#define debug_init() {}
+#define debug_shutdown() {}
 
 #endif
 
