@@ -1,4 +1,4 @@
-// This file was generated from resources/items.iff
+// This file was generated from resources/elements.iff
 // DO NOT MODIFY!
 
 #ifndef SRC_IMAGES_H
