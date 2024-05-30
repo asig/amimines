@@ -19,8 +19,8 @@ clean:
 	@rm -f gen/*
 	@rm -f src/images.c src/images.h
 
-src/images.c: gen/imggen resources/items.png
-	gen/imggen resources/items.png src/images
+src/images.c: gen/imggen resources/elements.iff
+	gen/imggen resources/elements.iff src/images
 
 gen/%.o: src/%.c
 	vc +kick13 $(VBCCFLAGS) $< -c -o $@
@@ -28,8 +28,13 @@ gen/%.o: src/%.c
 minesweeper: $(OBJS)
 	vc +kick13 -lamiga $^ -o $@
 
-gen/imggen: tools/imggen.cpp
-	gcc -g $< -lstdc++ -lpng -o $@
+gen/imggen: tools/imggen.cpp tools/imgloader.cpp tools/imgloader.h
+	gcc -g tools/imggen.cpp tools/imgloader.cpp -lstdc++ -lpng -o $@
 
-gen/infogen: tools/infogen.cpp
-	gcc -g $< -lstdc++ -o $@
+gen/infogen: tools/infogen.cpp tools/imgloader.cpp tools/imgloader.h
+	gcc -g tools/infogen.cpp tools/imgloader.cpp -lstdc++ -lpng -o $@
+
+adf: minesweeper resources/icon.iff gen/infogen
+	mkdir -p build/adf
+	gen/infogen --type TOOL --stacksize 10240 --icon resources/icon.iff@0,0,64,32 --icon resources/icon.iff@96,0,64,32 --x 10 --y 10 build/adf/minesweeper.info
+
