@@ -70,6 +70,7 @@ void drawRemainingMines(int mines) {
 }
 
 void drawTimer(int secs) {
+    secs = secs % 1000;
     DrawImage(window->RPort, digits[secs/100], TIMER_X+0*imgDigit0.Width, TIMER_Y);
     secs %= 100;
     DrawImage(window->RPort, digits[secs/10],  TIMER_X+1*imgDigit0.Width, TIMER_Y);
@@ -286,9 +287,6 @@ void startGame(int d) {
 }
 
 int main(int argc, char **argv) {
-    printf("LOGO X1: %d\n", HEADER_X+HEADER_W);
-    printf("LOGO Y2: %d\n", PLAYFIELD_Y - PLAYFIELD_BORDER);
-
     srand(time(NULL));
     debug_init();
    
