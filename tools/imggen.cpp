@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2024 Andreas Signer <asigner@gmail.com>
+ *
+ * This file is part of AmiMines.
+ *
+ * AmiMines is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of 
+ * the License, or (at your option) any later version.
+ *
+ * AmiMines is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with AmiMines.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <stdio.h>
 
 #include <algorithm>
@@ -12,6 +31,26 @@
 ImageLoader *loader;
 Image image;
 
+constexpr const char* kLicense = 
+        "/*\n"
+        " * Copyright (c) 2024 Andreas Signer <asigner@gmail.com>\n"
+        " *\n"
+        " * This file is part of AmiMines.\n"
+        " *\n"
+        " * AmiMines is free software: you can redistribute it and/or\n"
+        " * modify it under the terms of the GNU General Public License as\n"
+        " * published by the Free Software Foundation, either version 3 of \n"
+        " * the License, or (at your option) any later version.\n"
+        " *\n"
+        " * AmiMines is distributed in the hope that it will be useful,\n"
+        " * but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+        " * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+        " * GNU General Public License for more details.\n"
+        " *\n"
+        " * You should have received a copy of the GNU General Public License\n"
+        " * along with AmiMines.  If not, see <https://www.gnu.org/licenses/>.\n"
+        " */\n\n";
+
 std::string makeDefineName(const std::string& s) {
     std::string res = s;
     std::transform(res.begin(), res.end(), res.begin(), [](char c) { c= ::toupper(c); return (c<'A'||c>'Z') ? '_' : c; } );
@@ -25,7 +64,7 @@ std::string toHex(std::uint16_t val) {
 }
 
 void extractImage(int imgX, int imgY, int imgW, int imgH, const std::string& structName, std::ofstream& headerStream, std::ofstream& implStream) {
-    
+   
     Image img = image.extract(imgX, imgY, imgW, imgH);
     int bitDepth = image.depth();
 
@@ -87,11 +126,11 @@ int main(int argc, char **argv) {
     }
     image = loader->image();
 
-
     // open files
     std::ofstream headerStream;
     headerStream.open(dest + ".h");
     headerStream
+        << kLicense 
         << "// This file was generated from " << filename << "\n"
         << "// DO NOT MODIFY!\n\n"
         << "#ifndef " << makeDefineName(dest) << "\n"
@@ -102,6 +141,7 @@ int main(int argc, char **argv) {
     std::ofstream implStream;
     implStream.open(dest + ".c");
     implStream 
+        << kLicense 
         << "// This file was generated from " << filename << "\n"
         << "// DO NOT MODIFY!\n\n"
         << "#include <intuition/intuition.h>\n"
