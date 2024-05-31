@@ -36,7 +36,7 @@ std::unordered_map<std::string, Type> typeNameToVal = {
     {"APPICON", Type::APPICON},
 };
 
-struct Region {
+struct Rect {
     long x, y, w, h;
 };
 
@@ -112,12 +112,13 @@ private:
 
 void usage() {
     std::cerr 
-        << "usage: infogen --type <type> [--stacksize <stacksize>] {--icon path/to/icon@<region>} [--x int] [--y int] info-file-name" << "\n"
+        << "usage: infogen --type <type> [--stacksize <stacksize>] {--icon path/to/icon@<rect>} [--x int] [--y int] [--drawer <rect>] info-file-name" << "\n"
         << "   where\n"
         << "      <type> is one of DISK, DRAWER, TOOL, PROJECT, GARBAGE, DEVICE, KICK, or APPICON" << "\n"
         << "      <stacksize> is an integer > 4096" << "\n"
+        << "      <rect> is a comma-separated list of for ints, specifing a rectangle (x,y,w,h)" << "\n"
         << "   --icon needs to be present at least once, and at most 2 times." << "\n"
-        << "      <region> specifies the part of the image that should be used, and is expressed as x,y,w,h ." << "\n"
+        << "      <rect> specifies the part of the image that should be used, and is expressed as x,y,w,h ." << "\n"
         << "      Example: to extract 3232 pixels at the position (100,150) from foo.iff, use: --icon foo.iff@100,150,32,32\n";
     exit(1);
 }
@@ -131,13 +132,40 @@ bool parseInt(const char* s, long& val) {
     return (*endptr == 0 || isspace(*endptr));
 }
 
-bool parseUint(char* s, long& val) {
+bool parseUint(const char* s, long& val) {
     return parseInt(s, val) && val >= 0;
 }
 
-bool parsePathWithRegion(const char* raw, std::string& path, Region& region) {    
-    region.x = region.y = region.w = region.h = -1;
+bool parseRect(const char *raw, Rect& r) {
+    r.x = r.y = r.w = r.h = -1;
 
+    // parse rect
+    std::vector<std::string> parts;
+    std::istringstream is(raw);
+    std::string s;    
+    while (getline(is, s, ',')) {
+        parts.push_back(s);
+    }
+    if (parts.size() != 4) {
+        return false;
+    }
+    if (!parseInt(parts[0].c_str(), r.x)) {
+        return false;
+    }
+    if (!parseInt(parts[1].c_str(), r.y)) {
+        return false;
+    }
+    if (!parseUint(parts[2].c_str(), r.w)) {
+        return false;
+    }
+    if (!parseUint(parts[3].c_str(), r.h)) {
+        return false;
+    }
+    return true;
+
+}
+
+bool parsePathWithRect(const char* raw, std::string& path, Rect& r) {    
     if (!raw) {
         return false;
     }
@@ -148,35 +176,12 @@ bool parsePathWithRegion(const char* raw, std::string& path, Region& region) {
         return true;
     }
 
-    // split path and region
-    std::string regionString = path.substr(sepPos+1);
+    // split path and rect
+    std::string rectString = path.substr(sepPos+1);
     path = path.substr(0, sepPos);
 
-    // parse region
-    std::vector<std::string> regionParts;
-    std::istringstream is(regionString);
-    std::string s;    
-    while (getline(is, s, ',')) {
-        regionParts.push_back(s);
-    }
-    if (regionParts.size() != 4) {
-        return false;
-    }
-    if (!parseInt(regionParts[0].c_str(), region.x)) {
-        return false;
-    }
-    if (!parseInt(regionParts[1].c_str(), region.y)) {
-        return false;
-    }
-    if (!parseInt(regionParts[2].c_str(), region.w)) {
-        return false;
-    }
-    if (!parseInt(regionParts[3].c_str(), region.h)) {
-        return false;
-    }
-    return true;
+    return parseRect(rectString.c_str(), r);
 }
-
 
 
 void addImage(const Image& img, binstream& os) {
@@ -224,6 +229,8 @@ int main(int argc, char *const *argv) {
     std::vector<Image> images;
     int posX = 50;
     int posY = 50;
+    Rect drawerRect = {40, 40, 300, 100};
+    bool hasDrawerRect = false;
 
     static option longopts[] = {
         {"type", required_argument, nullptr, 't'},
@@ -231,11 +238,12 @@ int main(int argc, char *const *argv) {
         {"icon", required_argument, nullptr, 'i'},
         {"x", required_argument, nullptr, 'x'},
         {"y", required_argument, nullptr, 'y'},
+        {"drawer", required_argument, nullptr, 'd'},
         {0,0,0,0},
     };
     for(;;) {
         int option_index = 0;
-        int c = getopt_long (argc, argv, "t:sixy", longopts, &option_index);
+        int c = getopt_long (argc, argv, "t:s:i:x:y:d:", longopts, &option_index);
         if (c == -1) {
             // end of options
             break;
@@ -272,8 +280,8 @@ int main(int argc, char *const *argv) {
                         continue;
                     }
                     std::string path;
-                    Region region;
-                    if (!parsePathWithRegion(optarg, path, region)) {
+                    Rect rect;
+                    if (!parsePathWithRect(optarg, path, rect)) {
                         std::cerr << "Can't parse filename/region " << optarg << "\n";
                         continue;
                     }
@@ -289,8 +297,8 @@ int main(int argc, char *const *argv) {
                         continue;
                     }
                     Image img = loader->image();
-                    if (region.x != -1) {
-                        img = img.extract(region.x, region.y, region.w, region.h);
+                    if (rect.x != -1) {
+                        img = img.extract(rect.x, rect.y, rect.w, rect.h);
                     }
                     images.push_back(img);
                     delete loader;
@@ -316,6 +324,15 @@ int main(int argc, char *const *argv) {
                     }
                 }
                 break;
+            case 'd':
+                {                    
+                    if (!parseRect(optarg, drawerRect)) {
+                        std::cerr << "Invalid rect " << optarg << "\n";
+                        continue;
+                    }
+                    hasDrawerRect = true;
+                }
+                break;
             default:
                 usage();
         }
@@ -326,12 +343,15 @@ int main(int argc, char *const *argv) {
     }
     filename = argv[optind];
 
-    // Check mandatory flags
+    // Check flags
     if (type == Type::UNDEFINED) {
         usage();
     }
     if (images.size() < 1 || images.size() > 2) {
         usage();
+    }
+    if (hasDrawerRect && type != Type::DRAWER) {
+        std:: cerr << "Type is not DRAWER, ignoring --drawer\n";
     }
 
     std::ofstream ofs;
@@ -433,16 +453,16 @@ int main(int argc, char *const *argv) {
     if (hasDrawerData) {
         // 0x00 struct NewWindow        
         //     0x00 WORD  nw_LeftEdge       left edge distance of window
-        os << (std::int16_t)30; // FIXME DO NOT HARDCODE
+        os << (std::int16_t)drawerRect.x;
 
         //     0x02 WORD  nw_TopEdge        top edge distance of window
-        os << (std::int16_t)30; // FIXME DO NOT HARDCODE
+        os << (std::int16_t)drawerRect.y;
 
         //     0x04 WORD  nw_Width          the width of the window (outer width)
-        os << (std::int16_t)400; // FIXME DO NOT HARDCODE
+        os << (std::int16_t)drawerRect.w;
 
         //     0x06 WORD  nw_Height         the height of the window (outer height)
-        os << (std::int16_t)200; // FIXME DO NOT HARDCODE
+        os << (std::int16_t)drawerRect.h;
 
         //     0x08 UBYTE nw_DetailPen      always 255 ???
         os << (std::uint8_t)0xff;
