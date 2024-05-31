@@ -50,7 +50,7 @@ $(TOOLSDIR)/infogen: tools/infogen.cpp tools/imgloader.cpp tools/imgloader.h
 $(BUILDDIR)/AmiMines.info: pre-build resources/icons.iff $(TOOLSDIR)/infogen
 	$(TOOLSDIR)/infogen \
 	    --type TOOL \
-		--stacksize 10240 \
+		--stacksize 32768 \
 		--icon resources/icons.iff@0,0,64,32 \
 		--icon resources/icons.iff@96,0,64,32 \
 		--x 60 \
@@ -62,7 +62,9 @@ $(BUILDDIR)/Disk.info: pre-build resources/icons.iff $(TOOLSDIR)/infogen
 		--icon resources/icons.iff@0,36,43,21 \
 		--icon resources/icons.iff@43,36,43,21 \
 		--x 50 \
-		--y 10 $@
+		--y 10 \
+		--drawer 30,40,200,100 \
+		$@
 
 AmiMines.adf: $(BUILDDIR)/AmiMines $(BUILDDIR)/AmiMines.info $(BUILDDIR)/Disk.info
 	rm -rf $@
@@ -70,8 +72,10 @@ AmiMines.adf: $(BUILDDIR)/AmiMines $(BUILDDIR)/AmiMines.info $(BUILDDIR)/Disk.in
 	  create \
 	  + format 'AmiMines' ofs \
 	  + boot install boot1x \
+	  + makedir c \
+	  + write resources/adf/Stack c/ \
 	  + makedir s \
-	  + write resources/startup-sequence s/ \
+	  + write resources/adf/startup-sequence s/ \
 	  + write $(BUILDDIR)/Disk.info / \
 	  + write $(BUILDDIR)/AmiMines / \
 	  + write $(BUILDDIR)/AmiMines.info /
