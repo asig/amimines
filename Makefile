@@ -63,10 +63,19 @@ $(BUILDDIR)/Disk.info: pre-build resources/icons.iff $(TOOLSDIR)/infogen
 		--icon resources/icons.iff@43,36,43,21 \
 		--x 50 \
 		--y 10 \
-		--drawer 30,40,200,100 \
+		--drawer 30,40,400,100 \
 		$@
 
-AmiMines.adf: $(BUILDDIR)/AmiMines $(BUILDDIR)/AmiMines.info $(BUILDDIR)/Disk.info
+$(BUILDDIR)/README.info: pre-build resources/icons.iff $(TOOLSDIR)/infogen
+	$(TOOLSDIR)/infogen \
+	    --type PROJECT \
+		--icon resources/icons.iff@0,56,40,21 \
+		--x 250 \
+		--y 30 \
+		--default_tool :c/more \
+		$@
+
+AmiMines.adf: $(BUILDDIR)/AmiMines $(BUILDDIR)/AmiMines.info $(BUILDDIR)/README.info $(BUILDDIR)/Disk.info
 	rm -rf $@
 	xdftool $@ \
 	  create \
@@ -76,9 +85,12 @@ AmiMines.adf: $(BUILDDIR)/AmiMines $(BUILDDIR)/AmiMines.info $(BUILDDIR)/Disk.in
 	  + write $(BUILDDIR)/Disk.info / \
 	  + write $(BUILDDIR)/AmiMines / \
 	  + write $(BUILDDIR)/AmiMines.info / \
+	  + write README.md /README \
+	  + write $(BUILDDIR)/README.info / \
 	  + makedir c \
 	  + write resources/adf/c/Stack c/ \
 	  + write resources/adf/c/Type c/ \
+	  + write resources/adf/c/More c/ \
 	  + makedir s \
 	  + write resources/adf/s/startup-sequence s/ \
 	  + makedir devs \
