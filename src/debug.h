@@ -5,7 +5,7 @@
  *
  * AmiMines is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of 
+ * published by the Free Software Foundation, either version 3 of
  * the License, or (at your option) any later version.
  *
  * AmiMines is distributed in the hope that it will be useful,
@@ -22,9 +22,11 @@
 
 #ifdef DEBUG
 
-#define debug_print(fmt, ...) \
-        do { dbg_print("%s:%d:%s(): " fmt "\n", __FILE__, \
-                                __LINE__, __func__, __VA_ARGS__); } while (0)
+#define debug_print(fmt, ...)                                                  \
+  do {                                                                         \
+    dbg_print("%s:%d:%s(): " fmt "\n", __FILE__, __LINE__, __func__,           \
+              __VA_ARGS__);                                                    \
+  } while (0)
 
 #define debug_init() dbg_init()
 #define debug_shutdown() dbg_shutdown()
@@ -33,11 +35,14 @@ void dbg_print(const char *fmt, ...);
 void dbg_init();
 void dbg_shutdown();
 
-# else 
+#else
 
-#define debug_print(fmt, ...) {}
-#define debug_init() {}
-#define debug_shutdown() {}
+#define debug_print(fmt, ...)                                                  \
+  {}
+#define debug_init()                                                           \
+  {}
+#define debug_shutdown()                                                       \
+  {}
 
 #endif
 

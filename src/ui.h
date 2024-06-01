@@ -5,7 +5,7 @@
  *
  * AmiMines is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of 
+ * published by the Free Software Foundation, either version 3 of
  * the License, or (at your option) any later version.
  *
  * AmiMines is distributed in the hope that it will be useful,
@@ -38,9 +38,9 @@ extern struct Screen *screen;
 extern struct Window *window;
 
 struct RadioGroup {
-    struct Gadget **gadgets;
-    int nofGadgets;
-    struct Gadget *selected;
+  struct Gadget **gadgets;
+  int nofGadgets;
+  struct Gadget *selected;
 };
 
 extern struct RadioGroup uiDifficultyRadioGroup;
