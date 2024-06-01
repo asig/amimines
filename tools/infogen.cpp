@@ -108,19 +108,26 @@ public:
 
     binstream &operator<<(std::uint8_t v) {        
         os_ << (std::uint8_t)v;
-        pos_++;;
+        pos_++;
         return *this;
     }
 
     binstream &operator<<(std::int8_t v) {        
         os_ << (std::uint8_t)v;
-        pos_++;;
+        pos_++;
         return *this;
     }
 
     binstream &operator<<(char v) {
         os_ << (std::uint8_t)v;
-        pos_++;;
+        pos_++;
+        return *this;
+    }
+
+    binstream &operator<<(const std::string& s) {
+        std::size_t l = s.length();
+        os_.write(s.c_str(), l);
+        pos_ += l;
         return *this;
     }
 
@@ -131,7 +138,7 @@ private:
 
 void usage() {
     std::cerr 
-        << "usage: infogen --type <type> [--stacksize <stacksize>] {--icon path/to/icon@<rect>} [--x int] [--y int] [--drawer <rect>] info-file-name" << "\n"
+        << "usage: infogen --type <type> [--stacksize <stacksize>] {--icon path/to/icon@<rect>} [--x int] [--y int] [--drawer <rect>] [--default_tool string] [--tool_window] info-file-name" << "\n"
         << "   where\n"
         << "      <type> is one of DISK, DRAWER, TOOL, PROJECT, GARBAGE, DEVICE, KICK, or APPICON" << "\n"
         << "      <stacksize> is an integer > 4096" << "\n"
@@ -250,7 +257,13 @@ int main(int argc, char *const *argv) {
     int posY = 50;
     Rect drawerRect = {40, 40, 300, 100};
     bool hasDrawerRect = false;
+    std::string defaultTool = "";
+    bool hasDefaultTool;
+    bool toolWindow = false;
+    bool hasToolWindow;
 
+    constexpr const int kDefaultToolVal = 1;
+    constexpr const int kToolWindowVal = 2;
     static option longopts[] = {
         {"type", required_argument, nullptr, 't'},
         {"stacksize", required_argument, nullptr, 's'},
@@ -258,6 +271,9 @@ int main(int argc, char *const *argv) {
         {"x", required_argument, nullptr, 'x'},
         {"y", required_argument, nullptr, 'y'},
         {"drawer", required_argument, nullptr, 'd'},
+        {"default_tool", required_argument, nullptr, kDefaultToolVal},
+        {"tool_window", no_argument, nullptr, kToolWindowVal},
+
         {0,0,0,0},
     };
     for(;;) {
@@ -268,6 +284,13 @@ int main(int argc, char *const *argv) {
             break;
         }
         switch(c) {
+            case kDefaultToolVal:
+                hasDefaultTool = true;
+                defaultTool = optarg;
+                break;
+            case kToolWindowVal:
+                toolWindow = true;
+                break;
             case 't':
                 {
                     auto it = typeNameToVal.find(optarg);
@@ -346,7 +369,7 @@ int main(int argc, char *const *argv) {
             case 'd':
                 {                    
                     if (!parseRect(optarg, drawerRect)) {
-                        std::cerr << "Invalid rect " << optarg << "\n";
+                        std::cerr << "--drawer: Invalid rect " << optarg << "\n";
                         continue;
                     }
                     hasDrawerRect = true;
@@ -371,6 +394,15 @@ int main(int argc, char *const *argv) {
     }
     if (hasDrawerRect && type != Type::DRAWER) {
         std:: cerr << "Type is not DRAWER, ignoring --drawer\n";
+    }
+    if (hasDefaultTool && type != Type::PROJECT) {
+        std:: cerr << "Type is not PROJECT, ignoring --default_tool\n";
+    }
+    if (toolWindow && type != Type::PROJECT) {
+        std:: cerr << "Type is not PROJECT, ignoring --tool_window\n";
+    }
+    if (!hasDefaultTool && type == Type::PROJECT) {
+        std:: cerr << "Type is PROJECT, but not default_tool given.\n";
     }
 
     std::ofstream ofs;
@@ -448,7 +480,7 @@ int main(int argc, char *const *argv) {
     os << (std::uint8_t)0;
 
     // 0x32 APTR  ic_DefaultTool    <boolean>
-    os << (std::uint32_t)0;
+    os << (std::uint32_t)hasDefaultTool;
 
     // 0x36 APTR  ic_ToolTypes      <boolean>
     os << (std::uint32_t)0;
@@ -463,7 +495,7 @@ int main(int argc, char *const *argv) {
     os << (std::uint32_t)(hasDrawerData ? 0x1234 : 0);
 
     // 0x46 APTR  ic_ToolWindow     <boolean>
-    os << (std::uint32_t)0; // not supported yet
+    os << (std::uint32_t)toolWindow;
 
     // 0x4A LONG  ic_StackSize      the stack size for program execution
     //                            (values < 4096 mean 4096 is used)
@@ -538,9 +570,29 @@ int main(int argc, char *const *argv) {
         addImage(img, os);
     }
 
-    // DefaultTool not supported, ic_DefaultTool is always 0
+    if (hasDefaultTool) {
+        // 0x00 ULONG tx_Size           the size of tx_Text including zero byte (tx_Zero)
+        os << (std::uint32_t)defaultTool.length()+1;
+
+        // 0x04 ...   tx_Text           the plain text
+        os << defaultTool;
+
+        // .... UBYTE tx_Zero           the finishing zero byte
+        os << (std::uint8_t)0;
+    }
+
     // ToolTypes not supported, ic_ToolTypes is always 0
-    // ToolWindow not supported, ic_ToolWindow is always 0
+
+    if (no_argument) {
+        // ToolWindow (never implemented, just use empty string)
+
+        // 0x00 ULONG tx_Size           the size of tx_Text including zero byte (tx_Zero)
+        os << (std::uint32_t)1;
+        // 0x04 ...   tx_Text           the plain text
+        // .... UBYTE tx_Zero           the finishing zero byte
+        os << (std::uint8_t)0;
+    }
+
     // DrawerData2 not supported
 
     ofs.close();
