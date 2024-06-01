@@ -2,6 +2,6 @@
 [ ] add README to ADF
     [ ] icon for README
     [ ] add muchmore?
-[ ] Add startup message when booting
+[X] Add startup message when booting
 [ ] Add sound effects
 [ ] Implement copper animation and counter in VERTB interrupt

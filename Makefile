@@ -72,11 +72,15 @@ AmiMines.adf: $(BUILDDIR)/AmiMines $(BUILDDIR)/AmiMines.info $(BUILDDIR)/Disk.in
 	  create \
 	  + format 'AmiMines' ofs \
 	  + boot install boot1x \
-	  + makedir c \
-	  + write resources/adf/Stack c/ \
-	  + makedir s \
-	  + write resources/adf/startup-sequence s/ \
+	  + write resources/adf/startup-message / \
 	  + write $(BUILDDIR)/Disk.info / \
 	  + write $(BUILDDIR)/AmiMines / \
-	  + write $(BUILDDIR)/AmiMines.info /
+	  + write $(BUILDDIR)/AmiMines.info / \
+	  + makedir c \
+	  + write resources/adf/c/Stack c/ \
+	  + write resources/adf/c/Type c/ \
+	  + makedir s \
+	  + write resources/adf/s/startup-sequence s/ \
+	  + makedir devs \
+	  + write resources/adf/devs/system-configuration devs/ \
 		
