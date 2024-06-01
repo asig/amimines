@@ -51,16 +51,16 @@ $(BUILDDIR)/AmiMines.info: pre-build resources/icons.iff $(TOOLSDIR)/infogen
 	$(TOOLSDIR)/infogen \
 	    --type TOOL \
 		--stacksize 32768 \
-		--icon resources/icons.iff@0,0,64,32 \
-		--icon resources/icons.iff@96,0,64,32 \
+		--icon resources/icons.iff@0,0,64,34 \
+		--icon resources/icons.iff@96,0,64,34 \
 		--x 60 \
 		--y 30 $@
 
 $(BUILDDIR)/Disk.info: pre-build resources/icons.iff $(TOOLSDIR)/infogen
 	$(TOOLSDIR)/infogen \
 	    --type DISK \
-		--icon resources/icons.iff@0,36,43,21 \
-		--icon resources/icons.iff@43,36,43,21 \
+		--icon resources/icons.iff@0,35,43,22 \
+		--icon resources/icons.iff@43,35,43,22 \
 		--x 50 \
 		--y 10 \
 		--drawer 30,40,400,100 \
@@ -69,10 +69,10 @@ $(BUILDDIR)/Disk.info: pre-build resources/icons.iff $(TOOLSDIR)/infogen
 $(BUILDDIR)/README.info: pre-build resources/icons.iff $(TOOLSDIR)/infogen
 	$(TOOLSDIR)/infogen \
 	    --type PROJECT \
-		--icon resources/icons.iff@0,56,40,21 \
+		--icon resources/icons.iff@0,58,40,22 \
 		--x 250 \
 		--y 30 \
-		--default_tool :c/more \
+		--default_tool :c/MuchMore \
 		$@
 
 AmiMines.adf: $(BUILDDIR)/AmiMines $(BUILDDIR)/AmiMines.info $(BUILDDIR)/README.info $(BUILDDIR)/Disk.info
@@ -90,7 +90,7 @@ AmiMines.adf: $(BUILDDIR)/AmiMines $(BUILDDIR)/AmiMines.info $(BUILDDIR)/README.
 	  + makedir c \
 	  + write resources/adf/c/Stack c/ \
 	  + write resources/adf/c/Type c/ \
-	  + write resources/adf/c/More c/ \
+	  + write resources/adf/c/MuchMore c/ \
 	  + makedir s \
 	  + write resources/adf/s/startup-sequence s/ \
 	  + makedir devs \
