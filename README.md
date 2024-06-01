@@ -7,6 +7,10 @@ already now, Minesweeper is a classic puzzle game where the player must clear
 a rectangular board containing hidden mines without detonating any of them,
 using clues about the number of neighboring mines in each cell.
 
+A ready-made ADF files is provided in the main directory. If you want
+to build your own image, you can of course do so as well. Instructions
+on how to build AmiMines are at the end of this file.
+
 ## Gameplay
 The game is played on a grid of cells, some of which contain mines. The
 objective is to clear all non-mined cells and mark all mines correctly.
@@ -42,8 +46,7 @@ correctly marked.
 
 The game is lost if a mine is revealed by clicking on it.
 
-
-## Building
+## Building from source
 
 ### Dependencies
 
