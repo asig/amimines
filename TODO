@@ -3,5 +3,5 @@
     [x] icon for README
     [x] add muchmore?
 [X] Add startup message when booting
+[X] Implement copper animation and counter in VERTB interrupt
 [ ] Add sound effects
-[ ] Implement copper animation and counter in VERTB interrupt

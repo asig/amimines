@@ -37,6 +37,9 @@
 #include "layout.h"
 #include "ui.h"
 
+#define INTB_VERTB 5
+#define INTB_COPER 4
+
 extern struct Custom custom;
 struct IntuitionBase *IntuitionBase;
 struct GfxBase *GfxBase;
@@ -48,6 +51,7 @@ SHORT tileX;
 SHORT tileY;
 BOOL trackingMouse;
 int difficulty;
+ULONG ticks;
 
 struct Image *digits[] = {
     &imgDigit0, &imgDigit1, &imgDigit2, &imgDigit3, &imgDigit4,
@@ -247,11 +251,14 @@ void handleLmbUp(struct IntuiMessage *msg) {
   }
   trackingMouse = FALSE;
 
-  game.timerRunning = TRUE;
-
   if (tileX == 0 || tileY == 0) {
     // mouse outside playfield
     return;
+  }
+
+  if (!game.timerRunning) {
+    game.timerRunning = TRUE;
+    game.ticksStart = ticks;
   }
 
   openTile(tileX, tileY);
@@ -304,10 +311,27 @@ void startGame(int d) {
 
   DrawImage(window->RPort, &imgFaceNormal, SMILEY_X, SMILEY_Y);
   drawRemainingMines(game.unmarkedMines);
-  drawTimer(game.ticks / 50);
+  drawTimer(0);
   drawPlayfield();
   trackingMouse = FALSE;
 }
+
+__amigainterrupt void vblankHandler() {
+  ticks++;
+  copperAnimate();
+}
+
+struct Interrupt vbint = {{NULL /* ln_Succ */, NULL /* ln_Prev */, NT_INTERRUPT,
+                           0 /* ln_Pri */, "VBlank"},
+                          NULL,
+                          vblankHandler};
+
+void installVBlankInterrupt() {
+  ticks = 0;
+  AddIntServer(INTB_VERTB, &vbint);
+}
+
+void removeVBlankInterrupt() { RemIntServer(INTB_VERTB, &vbint); }
 
 int main(int argc, char **argv) {
   srand(time(NULL));
@@ -330,17 +354,17 @@ int main(int argc, char **argv) {
   copperCreateList();
   copperAnimate();
 
+  installVBlankInterrupt();
+
   startGame(DIFFUCLTY_NOVICE);
 
   struct IntuiMessage *msg;
   terminate = FALSE;
   while (!terminate) {
-    copperAnimate();
     WaitTOF();
 
     if (game.timerRunning) {
-      game.ticks++;
-      drawTimer(game.ticks / 50);
+      drawTimer((ticks - game.ticksStart) / 50);
       drawRemainingMines(game.unmarkedMines);
     }
 
@@ -425,6 +449,8 @@ int main(int argc, char **argv) {
       ReplyMsg((struct Message *)msg);
     }
   }
+
+  removeVBlankInterrupt();
 
   // Remove Copperlist
   struct ViewPort *viewPort = &screen->ViewPort;

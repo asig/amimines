@@ -48,7 +48,7 @@ struct Tile2 {
 struct Game {
   BOOL running;
   ULONG timerRunning;
-  ULONG ticks;
+  ULONG ticksStart;
   USHORT totalMines;
   SHORT unmarkedMines;
   SHORT closedTiles;

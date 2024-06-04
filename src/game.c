@@ -24,7 +24,7 @@
 void newGame(struct Game *game, USHORT mines) {
   game->running = TRUE;
   game->timerRunning = FALSE;
-  game->ticks = 0;
+  game->ticksStart = 0;
   game->unmarkedMines = mines;
   game->totalMines = mines;
   game->closedTiles = PLAYFIELD_H_TILES * PLAYFIELD_W_TILES;
