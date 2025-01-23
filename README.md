@@ -3,7 +3,7 @@
 ## Overview
 AmiMines as a Minesweeper clone for the 
 [Commdore Amiga](https://en.wikipedia.org/wiki/Amiga). As you most probably
-already now, Minesweeper is a classic puzzle game where the player must clear
+already know, Minesweeper is a classic puzzle game where the player must clear
 a rectangular board containing hidden mines without detonating any of them,
 using clues about the number of neighboring mines in each cell.
 
@@ -64,7 +64,7 @@ To build the game yourself, you need:
 - `xdftool` to build the ADF image. `xdftool` is part of the 
   [Amitools suite](https://github.com/cnvogelg/amitools) and can be installed
   with `pip3 install amitools`. If you're running Debian, you probably want
-  to add add `--break-system-packages`.
+  to add `--break-system-packages`.
 
 ### Building the binary
 After having installed all the dependicies, just run `make` to build the ADF
